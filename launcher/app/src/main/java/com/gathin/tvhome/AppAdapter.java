@@ -52,9 +52,6 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
 
         /** Called for a D-pad direction key on a tile. Return true when handled (focus stays put). */
         boolean onTileVerticalKey(int position, int keyCode);
-
-        /** An app was opened from its tile; Home frees it a while after it is left. */
-        void onLaunched(String pkg);
     }
 
     static final class Entry {
@@ -254,7 +251,6 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             ctx.startActivity(i, ValueAnimator.areAnimatorsEnabled()
                     ? ActivityOptions.makeScaleUpAnimation(card, 0, 0, card.getWidth(), card.getHeight()).toBundle()
                     : null);
-            listener.onLaunched(e.pkg);
         } catch (Exception ex) {
             Toast.makeText(ctx, ctx.getString(R.string.cant_open, e.label), Toast.LENGTH_SHORT).show();
         }

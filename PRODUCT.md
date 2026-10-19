@@ -39,8 +39,11 @@ use.
 - Packages that have been turned off are listed in backup/my-debloat.txt (local, not committed).
 - Features to keep: the time capsule top right holding Inputs, Wi-Fi and Settings, the Inputs dropdown
   with HDMI 1–3 and Live TV, the Clock screensaver, InputKeyService for the remote's Input key.
-- Apps opened from a tile are freed 20 s after Home returns. Android 12 only lets a launcher free
-  cached apps, so the app you just left is freed on a later visit, once another app has opened.
+- Freeing other apps from the launcher does not work on this firmware: TCL ignores an app's
+  killBackgroundProcesses silently (tested 19 Oct 2026), so it was removed. Android's own cached-process
+  cap (device_config activity_manager max_cached_processes) does the job instead.
+- TCL's TGuard app-boot control (ro.feature.tguard_app_boot) refuses to bind third-party accessibility
+  services, so InputKeyService never runs: the remote's Input key does nothing outside Home.
 
 ## Brand Commitments
 Personal product. No external brand. The home follows Apple TV (tvOS) closely: top shelf, a top

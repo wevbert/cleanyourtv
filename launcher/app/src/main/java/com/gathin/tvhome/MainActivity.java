@@ -2,7 +2,6 @@ package com.gathin.tvhome;
 
 import android.animation.ValueAnimator;
 import android.app.Activity;
-import android.app.ActivityManager;
 import android.app.Dialog;
 import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
@@ -15,7 +14,6 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
-import android.media.AudioManager;
 import android.media.tv.TvContract;
 import android.media.tv.TvInputInfo;
 import android.media.tv.TvInputManager;
@@ -56,7 +54,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -70,8 +67,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** Tiles per row and dock slots (res/values/config.xml, columns). Set in onCreate. */
     static int COLUMNS = 4;
     private static final long MINUTE_MS = 60_000L;
-    /** Apps opened from a tile are freed this long after Home comes back, unless audio is playing. */
-    private static final long FREE_AFTER_MS = 20_000L;
     private String liveTvPkg;
     private String liveTvAction;
     private String inputAction;
@@ -96,8 +91,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private static String lastFocusedKey;
     /** The app list changed, or was never loaded: reload it on the next resume instead of on every one. */
     private static boolean appsDirty = true;
-    /** Apps opened from a tile, freed FREE_AFTER_MS after Home comes back (a no-op for apps not running). */
-    private static final Set<String> launched = new LinkedHashSet<>();
     private float density;
     /** Module cards (res/values/config.xml, module_cards): discovered on resume, shown only after the owner's Show. */
     private boolean moduleCards;
@@ -164,26 +157,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         public void run() {
                 updateWifiLabel();
             handler.postDelayed(this, MINUTE_MS);
-        }
-    };
-
-    private final Runnable freeApps = new Runnable() {
-        @Override
-        public void run() {
-            AudioManager audio = getSystemService(AudioManager.class);
-            if (audio != null && audio.isMusicActive()) {
-                // Something still plays in the background (a music app): try again later.
-                handler.postDelayed(this, FREE_AFTER_MS);
-                return;
-            }
-            ActivityManager am = getSystemService(ActivityManager.class);
-            if (am == null) return;
-            for (String pkg : launched) {
-                if (pkg.equals(liveTvPkg) || pkg.equals(getPackageName())) continue;
-                am.killBackgroundProcesses(pkg);
-            }
-            // Kept, not cleared: Android only lets a launcher free an app once it is cached, and the app
-            // you just left stays "previous" until another one opens, so it is freed on a later visit.
         }
     };
 
@@ -373,8 +346,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         updateWifiLabel();
         updateInputsButton();
         handler.postDelayed(minuteTick, MINUTE_MS);
-        handler.removeCallbacks(freeApps);
-        if (!launched.isEmpty()) handler.postDelayed(freeApps, FREE_AFTER_MS);
     }
 
     /** Rebuilds the tiles (and the module cards), then puts focus back where it was. */
@@ -435,7 +406,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     protected void onPause() {
         super.onPause();
         handler.removeCallbacks(minuteTick);
-        handler.removeCallbacks(freeApps);
         // Nothing of ours stays on screen over another app; an undecided prompt simply returns next time.
         if (cardPrompt != null) cardPrompt.dismiss();
         if (openPopup != null) openPopup.dismiss();
@@ -501,14 +471,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         float a = shelf ? 0f : 0.62f;
         if (ValueAnimator.areAnimatorsEnabled()) gridShade.animate().alpha(a).setDuration(shelf ? 320 : 260).start();
         else gridShade.setAlpha(a);
-    }
-
-    @Override
-    public void onLaunched(String pkg) {
-        launched.remove(pkg);
-        launched.add(pkg);
-        // Bounded: the oldest falls off after 24 different apps.
-        if (launched.size() > 24) launched.remove(launched.iterator().next());
     }
 
     // ---- navigation ------------------------------------------------------------------------------
