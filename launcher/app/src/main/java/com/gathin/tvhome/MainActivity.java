@@ -597,6 +597,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 NetworkCapabilities caps = cm.getNetworkCapabilities(net);
                 if (caps == null) continue;
                 if (caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
+                    // The Netflix limiter is a VPN only in Android's terms: it never leaves the TV, so it is no
+                    // reason for the green "VPN" badge. Android tells an app which VPN is its own.
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+                            && caps.getOwnerUid() == android.os.Process.myUid()) continue;
                     vpn = true;
                     continue;
                 }
