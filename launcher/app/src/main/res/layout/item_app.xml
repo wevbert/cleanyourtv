@@ -45,6 +45,7 @@
             android:ellipsize="end"
             android:textColor="#FFFFFFFF"
             android:textSize="13sp"
+            android:letterSpacing="0.0083"
             android:fontFamily="@font/sf_pro"
             android:visibility="gone" />
 
@@ -71,5 +72,5 @@
         android:textSize="15sp"
         android:fontFamily="@font/sf_pro"
         android:fontVariationSettings="'wght' 500"
-        android:letterSpacing="0" />
+        android:letterSpacing="0.0132" />
 </FrameLayout>

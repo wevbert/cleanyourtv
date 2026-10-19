@@ -21,8 +21,7 @@
         android:textSize="11sp"
         android:fontFamily="@font/sf_pro"
         android:fontVariationSettings="'wght' 500"
-        android:letterSpacing="0.18"
-        android:textAllCaps="true" />
+        android:letterSpacing="-0.0117" />
 
     <ScrollView
         android:layout_width="match_parent"

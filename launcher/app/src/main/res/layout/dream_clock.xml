@@ -31,7 +31,7 @@
                 android:textSize="120sp"
                 android:fontFamily="@font/sf_pro"
                 android:fontVariationSettings="'wght' 200"
-                android:letterSpacing="-0.04"
+                android:letterSpacing="0.0"
                 android:includeFontPadding="false" />
 
             <TextClock
@@ -44,8 +44,7 @@
                 android:textSize="22sp"
                 android:fontFamily="@font/sf_pro"
                 android:fontVariationSettings="'wght' 500"
-                android:letterSpacing="0.08"
-                android:textAllCaps="true" />
+                android:letterSpacing="0.0083" />
         </LinearLayout>
 
         <TextClock
@@ -59,7 +58,6 @@
             android:textSize="18sp"
             android:fontFamily="@font/sf_pro"
             android:fontVariationSettings="'wght' 400"
-            android:letterSpacing="0.14"
-            android:textAllCaps="true" />
+            android:letterSpacing="0.0103" />
     </LinearLayout>
 </FrameLayout>

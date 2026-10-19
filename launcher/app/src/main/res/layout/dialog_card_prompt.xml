@@ -22,7 +22,7 @@
         android:textSize="22sp"
         android:fontFamily="@font/sf_pro"
         android:fontVariationSettings="'wght' 500"
-        android:letterSpacing="-0.01" />
+        android:letterSpacing="0.0083" />
 
     <TextView
         android:id="@+id/body"
@@ -31,6 +31,7 @@
         android:layout_marginTop="10dp"
         android:textColor="#D9FFFFFF"
         android:textSize="15sp"
+        android:letterSpacing="0.0132"
         android:lineSpacingExtra="3sp"
         android:fontFamily="@font/sf_pro" />
 
@@ -41,6 +42,7 @@
         android:layout_marginTop="6dp"
         android:textColor="#D9FFFFFF"
         android:textSize="15sp"
+        android:letterSpacing="0.0132"
         android:lineSpacingExtra="3sp"
         android:fontFamily="@font/sf_pro" />
 
@@ -52,6 +54,7 @@
         android:text="@string/card_prompt_hint"
         android:textColor="#99FFFFFF"
         android:textSize="13sp"
+        android:letterSpacing="0.0083"
         android:fontFamily="@font/sf_pro" />
 
     <TextView
@@ -62,7 +65,7 @@
         android:maxLines="2"
         android:textColor="#80FFFFFF"
         android:textSize="12sp"
-        android:letterSpacing="0.03"
+        android:letterSpacing="0.0029"
         android:fontFamily="@font/sf_pro" />
 
     <LinearLayout
