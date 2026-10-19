@@ -65,4 +65,14 @@
     <!-- Module cards: an app that declares a card (docs/specs/card.md) can stand in for its tile with its own
          label, caption and glow colour, once you answer Show on the prompt. false: never look for cards or ask. -->
     <bool name="module_cards">true</bool>
+
+    <!-- Greeting top left on Home: "Welcome, <name>". Empty: no greeting. -->
+    <string name="owner_name" translatable="false">Wevs</string>
+
+    <!-- Weather under the greeting, from Open-Meteo (free, no key). Empty place: no weather.
+         Coordinates in decimal degrees; unit "celsius" or "fahrenheit". -->
+    <string name="weather_place" translatable="false">Accra</string>
+    <string name="weather_latitude" translatable="false">5.6037</string>
+    <string name="weather_longitude" translatable="false">-0.1870</string>
+    <string name="weather_unit" translatable="false">celsius</string>
 </resources>

@@ -36,6 +36,79 @@
         android:scrollbars="none"
         android:descendantFocusability="afterDescendants" />
 
+    <!-- Top left, where tvOS sets a show's title: the greeting, and the weather under it. -->
+    <LinearLayout
+        android:id="@+id/welcomeBlock"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="60dp"
+        android:layout_marginTop="28dp"
+        android:orientation="vertical">
+
+        <!-- SF Pro Display semibold at 60pt, Apple's tracking for that size. -->
+        <TextView
+            android:id="@+id/welcome"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:textColor="#FFFFFFFF"
+            android:textSize="30sp"
+            android:letterSpacing="0.0044"
+            android:fontFamily="@font/sf_pro"
+            android:fontVariationSettings="'wght' 600, 'opsz' 28"
+            android:shadowColor="#73000000"
+            android:shadowDy="2"
+            android:shadowRadius="14"
+            android:includeFontPadding="false" />
+
+        <LinearLayout
+            android:id="@+id/weatherRow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/wxIcon"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:importantForAccessibility="no" />
+
+            <TextView
+                android:id="@+id/wxTemp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:textColor="#FFFFFFFF"
+                android:textSize="17sp"
+                android:letterSpacing="0.0115"
+                android:fontFamily="@font/sf_pro"
+                android:fontVariationSettings="'wght' 600, 'opsz' 28"
+                android:fontFeatureSettings="tnum"
+                android:shadowColor="#73000000"
+                android:shadowDy="1"
+                android:shadowRadius="10" />
+
+            <TextView
+                android:id="@+id/wxText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:singleLine="true"
+                android:textColor="#E0FFFFFF"
+                android:textSize="15sp"
+                android:letterSpacing="0.0132"
+                android:fontFamily="@font/sf_pro"
+                android:fontVariationSettings="'wght' 500, 'opsz' 28"
+                android:shadowColor="#73000000"
+                android:shadowDy="1"
+                android:shadowRadius="10" />
+        </LinearLayout>
+    </LinearLayout>
+
     <LinearLayout
         android:id="@+id/capsule"
         android:layout_width="wrap_content"

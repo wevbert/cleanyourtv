@@ -46,4 +46,16 @@
     <string name="card_state_new">New</string>
     <string name="card_state_new_key">New key</string>
     <string name="card_state_new_label">New name</string>
+    <string name="welcome">Welcome, %1$s</string>
+    <string name="wx_clear">Clear</string>
+    <string name="wx_mostly_clear">Mostly clear</string>
+    <string name="wx_partly_cloudy">Partly cloudy</string>
+    <string name="wx_cloudy">Cloudy</string>
+    <string name="wx_fog">Fog</string>
+    <string name="wx_drizzle">Drizzle</string>
+    <string name="wx_rain">Rain</string>
+    <string name="wx_showers">Showers</string>
+    <string name="wx_snow">Snow</string>
+    <string name="wx_thunder">Thunderstorms</string>
+    <string name="wx_high_low">H:%1$d°  L:%2$d°</string>
 </resources>

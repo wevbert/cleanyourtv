@@ -77,6 +77,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private RecyclerView grid;
     private FrameLayout root;
     private View gridShade;
+    private Weather weather;
+    private View weatherRow;
+    private ImageView wxIcon;
+    private TextView wxTemp, wxText;
     private ImageView wallView;
     private View btnInputs;
     private TextView btnWifi;
@@ -155,7 +159,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private final Runnable minuteTick = new Runnable() {
         @Override
         public void run() {
-                updateWifiLabel();
+            updateWifiLabel();
+            if (weather != null) weather.refreshIfDue(MainActivity.this::showWeather);
             handler.postDelayed(this, MINUTE_MS);
         }
     };
@@ -180,6 +185,18 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (cfg.wallpaper != null) showWallpaper(cfg.wallpaper);
         else showBuiltInWallpaper();
         gridShade = findViewById(R.id.gridShade);
+        String owner = getString(R.string.owner_name).trim();
+        TextView welcome = findViewById(R.id.welcome);
+        if (owner.isEmpty()) welcome.setVisibility(View.GONE);
+        else welcome.setText(getString(R.string.welcome, owner));
+        weatherRow = findViewById(R.id.weatherRow);
+        wxIcon = findViewById(R.id.wxIcon);
+        wxTemp = findViewById(R.id.wxTemp);
+        wxText = findViewById(R.id.wxText);
+        if (!getString(R.string.weather_place).trim().isEmpty()) {
+            weather = new Weather(this, getString(R.string.weather_latitude).trim(),
+                    getString(R.string.weather_longitude).trim(), getString(R.string.weather_unit).trim());
+        }
         btnWifi = findViewById(R.id.btnWifi);
         vpnApp = cfg.vpnApp;
         moduleCards = cfg.moduleCards;
@@ -346,6 +363,23 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         updateWifiLabel();
         updateInputsButton();
         handler.postDelayed(minuteTick, MINUTE_MS);
+        if (weather != null) {
+            showWeather(weather.cached());
+            weather.refreshIfDue(this::showWeather);
+        }
+    }
+
+    /** The weather line under the greeting: icon, temperature, conditions and today's range. */
+    private void showWeather(Weather.Now now) {
+        if (now == null) {
+            weatherRow.setVisibility(View.GONE);
+            return;
+        }
+        wxIcon.setImageResource(Weather.icon(now.code, now.day));
+        wxTemp.setText(now.temp + "\u00B0");
+        wxText.setText(getString(Weather.label(now.code)) + "   " + getString(R.string.wx_high_low, now.high, now.low));
+        weatherRow.setContentDescription(getString(R.string.weather_place) + ", " + now.temp + "\u00B0, " + wxText.getText());
+        weatherRow.setVisibility(View.VISIBLE);
     }
 
     /** Rebuilds the tiles (and the module cards), then puts focus back where it was. */
