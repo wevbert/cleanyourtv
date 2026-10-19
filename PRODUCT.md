@@ -53,6 +53,11 @@ use.
 - Data panel: the Wi-Fi button opens Wi-Fi data today / this week / this month and the top 3 apps this
   month (NetworkStatsManager; usage access granted at install by appops GET_USAGE_STATS), plus a row into
   Wi-Fi settings. Built once and refilled, icons cached: reopening it costs no memory (measured).
+- Netflix limiter (LimiterVpn + Socks5Proxy + hev-socks5-tunnel 2.18.0 in src/main/jni): a local VPN for
+  Netflix only, downloads paced to 8 Mbps so Netflix picks 1080p itself. Measured 19 Oct 2026: 11 Mbps
+  (5.2 GB/h, 4K) uncapped -> 6.4-8.1 Mbps (~3.2 GB/h), sharp, no buffering; at 6 Mbps it chose a soft
+  720p. ~7% of one core. Fail-open, always-on VPN, started by Home too; toggle in the data panel.
+  Only Netflix's uid (10077) is routed into it; DNS relayed to the router, other UDP dropped.
 - Features to keep: the time capsule top right holding Inputs, Wi-Fi and Settings, the Inputs dropdown
   with HDMI 1–3 and Live TV, the Clock screensaver, InputKeyService for the remote's Input key.
 - Freeing other apps from the launcher does not work on this firmware: TCL ignores an app's

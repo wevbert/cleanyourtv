@@ -23,5 +23,7 @@ export MSYS_NO_PATHCONV=1
   echo "device_config delete activity_manager max_cached_processes 2>/dev/null; echo cap-cleared"
   echo "device_config set_sync_disabled_for_tests none 2>/dev/null; echo flag-sync-restored"
   echo "settings delete global ota_disable_automatic_update; settings put system tcl_app_autoupdate 1 2>/dev/null; echo auto-updates-restored"
+  # Netflix limiter: stop it being the always-on VPN and withdraw its pre-approval.
+  echo "settings delete secure always_on_vpn_app; settings delete secure always_on_vpn_lockdown; appops set com.gathin.tvhome ACTIVATE_VPN default 2>/dev/null; echo limiter-removed"
   echo "pm list packages -d"
 } | "$PY" -I tools/tv.py --batch

@@ -29,6 +29,25 @@ android {
         targetSdk 34
         versionCode 3
         versionName '2.2'
+        // The TV runs 32-bit apps only (ro.product.cpu.abilist = armeabi-v7a).
+        ndk {
+            abiFilters 'armeabi-v7a'
+        }
+        externalNativeBuild {
+            ndkBuild {
+                // hev-socks5-tunnel's JNI registers on this class (src/main/jni/README.md).
+                arguments 'APP_CFLAGS+=-DPKGNAME=com/gathin/tvhome', 'APP_CFLAGS+=-DCLSNAME=LimiterVpn',
+                        'APP_PLATFORM=android-26', 'APP_STL=none'
+                targets 'hev-socks5-tunnel'
+            }
+        }
+    }
+
+    ndkVersion '27.3.13750724'
+    externalNativeBuild {
+        ndkBuild {
+            path 'src/main/jni/Android.mk'
+        }
     }
 
     buildTypes {

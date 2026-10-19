@@ -190,6 +190,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (cfg.wallpaper != null) showWallpaper(cfg.wallpaper);
         else showBuiltInWallpaper();
         gridShade = findViewById(R.id.gridShade);
+        startLimiter();
         String owner = getString(R.string.owner_name).trim();
         ownerName = owner;
         welcome = findViewById(R.id.welcome);
@@ -652,6 +653,24 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         b.setPaddingRelative(b.getPaddingStart(), b.getPaddingTop(), (int) ((open ? 14 : 8) * density), b.getPaddingBottom());
     }
 
+    /** Starts the Netflix limiter when it is approved (over ADB) and not running; a no-op otherwise. */
+    private void startLimiter() {
+        try {
+            if (!LimiterVpn.running() && android.net.VpnService.prepare(this) == null) {
+                startService(new Intent(this, LimiterVpn.class));
+            }
+        } catch (Exception ignored) {
+            // Not approved, or the system refused: Netflix just uses Wi-Fi as before.
+        }
+    }
+
+    private TextView limiterTitle;
+
+    private void updateLimiterRow() {
+        if (limiterTitle == null) return;
+        limiterTitle.setText(LimiterVpn.capMbps(this) > 0 ? R.string.limiter_on : R.string.limiter_off);
+    }
+
     /** The data panel, built once and refilled on each open, so reopening it allocates almost nothing. */
     private PopupWindow dataPopup;
     private View dataPanel;
@@ -668,6 +687,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         for (TextView v : dataValues) v.setText("\u2013");
         for (View r : dataRows) r.setVisibility(View.GONE);
         dataNote.setVisibility(View.GONE);
+        updateLimiterRow();
         dropIn(dataPopup, dataPanel, btnWifi, Gravity.END);
         ((LinearLayout) dataPanel.findViewById(R.id.rows)).getChildAt(0).requestFocus();
         // Read off the main thread; the panel opens at once and fills in a moment later.
@@ -724,8 +744,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             dataRows[i] = r;
             apps.addView(r);
         }
-        addInputRow(dataPanel.findViewById(R.id.rows), dataPopup, R.drawable.ic_wifi,
-                getString(R.string.wifi_settings), -1, this::openNetworkPill);
+        LinearLayout rows = dataPanel.findViewById(R.id.rows);
+        // OK toggles the cap and the panel stays open; the row's title says the state.
+        View cap = addInputRow(rows, dataPopup, R.drawable.ic_livetv, getString(R.string.limiter_on), -1, null);
+        limiterTitle = cap.findViewById(R.id.title);
+        cap.setOnClickListener(v -> {
+            LimiterVpn.setOn(this, LimiterVpn.capMbps(this) == 0);
+            startLimiter();
+            updateLimiterRow();
+        });
+        addInputRow(rows, dataPopup, R.drawable.ic_wifi, getString(R.string.wifi_settings), -1, this::openNetworkPill);
     }
 
     /** The network pill opens the VPN app when one is configured and installed, otherwise Wi-Fi settings. */

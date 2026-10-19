@@ -69,6 +69,7 @@ if ("$out" -match 'Error') { throw 'could not set the new launcher as home; the 
 @(
     'pm grant com.gathin.tvhome android.permission.ACCESS_FINE_LOCATION 2>/dev/null; echo location-granted',
     'appops set com.gathin.tvhome GET_USAGE_STATS allow; echo usage-access-granted',
+    'appops set com.gathin.tvhome ACTIVATE_VPN allow; echo limiter-approved',
     'cmd package compile -m speed -f com.gathin.tvhome',
     "am start -W -n com.gathin.tvhome/.MainActivity | grep -E '^(Status|Error)'",
     $disableStock,

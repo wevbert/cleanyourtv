@@ -93,6 +93,20 @@
             </intent-filter>
         </service>
 
+        <!-- Netflix speed limiter (LimiterVpn): a local VPN for Netflix only, started by Android as the
+             always-on VPN. Set up over ADB: appops ACTIVATE_VPN allow, settings always_on_vpn_app. -->
+        <service
+            android:name=".LimiterVpn"
+            android:exported="false"
+            android:permission="android.permission.BIND_VPN_SERVICE">
+            <intent-filter>
+                <action android:name="android.net.VpnService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.net.VpnService.SUPPORTS_ALWAYS_ON"
+                android:value="true" />
+        </service>
+
         <!-- The remote's Input button (KEYCODE_TV) opens the input switcher; see InputKeyService. -->
         <service
             android:name=".InputKeyService"
