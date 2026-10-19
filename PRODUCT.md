@@ -39,6 +39,14 @@ use.
 - Packages that have been turned off are listed in backup/my-debloat.txt (local, not committed).
 - Top left: a time-of-day greeting, "Good afternoon, Wevs" (config owner_name) and Accra weather in °C from Open-Meteo (no key; one
   request per 30 min, cached; config weather_*). TCL HOME (com.tcl.dashboard) is disabled.
+- Greeting occasions (Greeting.java): birthday 5 May (config owner_birthday), Ghana public holidays
+  with a red/gold/green line on national days, Easter by computation, Eid by the Umm al-Qura calendar
+  (can differ by a day from Ghana's announcement), "Happy Saturday/Sunday" on weekend days.
+- Weather notes: rain likely within 6 hours, raining now, or a high of 33°C or more.
+- Inputs: an awake CEC device's announced name replaces "HDMI n" on its row.
+- Screensaver (ClockDream): tvOS-style aerials with slow pan and zoom, 3-minute crossfades, greeting,
+  weather, time and place. Today's photo is shared with Home; the other is freed when it ends (+10 MB
+  while running, measured).
 - Features to keep: the time capsule top right holding Inputs, Wi-Fi and Settings, the Inputs dropdown
   with HDMI 1–3 and Live TV, the Clock screensaver, InputKeyService for the remote's Input key.
 - Freeing other apps from the launcher does not work on this firmware: TCL ignores an app's

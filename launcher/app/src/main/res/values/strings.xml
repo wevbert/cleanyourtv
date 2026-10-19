@@ -58,4 +58,27 @@
     <string name="wx_snow">Snow</string>
     <string name="wx_thunder">Thunderstorms</string>
     <string name="wx_high_low">H:%1$d°  L:%2$d°</string>
+    <string name="happy_saturday">Happy Saturday, %1$s</string>
+    <string name="happy_sunday">Happy Sunday, %1$s</string>
+    <string name="occasion_birthday">Happy birthday, %1$s</string>
+    <string name="occasion_independence">Happy Independence Day, %1$s</string>
+    <string name="occasion_republic">Happy Republic Day, %1$s</string>
+    <string name="occasion_founders">Happy Founders\' Day, %1$s</string>
+    <string name="occasion_nkrumah">Happy Kwame Nkrumah Day, %1$s</string>
+    <string name="occasion_constitution">Happy Constitution Day, %1$s</string>
+    <string name="occasion_new_year">Happy New Year, %1$s</string>
+    <string name="occasion_new_years_eve">Happy New Year\'s Eve, %1$s</string>
+    <string name="occasion_may_day">Happy May Day, %1$s</string>
+    <string name="occasion_farmers">Happy Farmers\' Day, %1$s</string>
+    <string name="occasion_christmas">Merry Christmas, %1$s</string>
+    <string name="occasion_boxing_day">Happy Boxing Day, %1$s</string>
+    <string name="occasion_good_friday">Blessed Good Friday, %1$s</string>
+    <string name="occasion_easter">Happy Easter, %1$s</string>
+    <string name="occasion_eid_fitr">Eid Mubarak, %1$s</string>
+    <string name="occasion_eid_adha">Eid Mubarak, %1$s</string>
+    <string name="wx_rain_at">Rain around %1$s, take an umbrella</string>
+    <string name="wx_rain_now">Raining now, stay dry</string>
+    <string name="wx_hot">Hot one today, %1$d°</string>
+    <string name="place_napali">Nā Pali Coast, Kauaʻi</string>
+    <string name="place_seapoint">Sea Point, Cape Town</string>
 </resources>

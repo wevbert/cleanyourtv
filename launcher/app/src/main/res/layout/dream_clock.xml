@@ -1,63 +1,115 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Screensaver (ClockDream): clock and date that drift around a black screen over an ambient glow. -->
+<!-- Screensaver (ClockDream), tvOS aerial style: an aerial drifting slowly, the time top right, the place
+     bottom right, and the greeting and weather bottom left. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#FF000000">
 
-    <View
-        android:id="@+id/dreamAmbient"
+    <ImageView
+        android:id="@+id/photoA"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:importantForAccessibility="no" />
 
-    <LinearLayout
-        android:id="@+id/dreamContent"
+    <ImageView
+        android:id="@+id/photoB"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:alpha="0"
+        android:importantForAccessibility="no" />
+
+    <TextClock
+        android:id="@+id/dreamClock"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="36dp"
+        android:layout_marginEnd="56dp"
+        android:format12Hour="h:mm"
+        android:format24Hour="HH:mm"
+        android:textColor="#FFFFFFFF"
+        android:textSize="28sp"
+        android:letterSpacing="0.0137"
+        android:fontFamily="@font/sf_pro"
+        android:fontVariationSettings="'wght' 600, 'opsz' 28"
+        android:fontFeatureSettings="tnum"
+        android:shadowColor="#80000000"
+        android:shadowDy="2"
+        android:shadowRadius="14" />
+
+    <LinearLayout
+        android:id="@+id/dreamText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start"
+        android:layout_marginStart="56dp"
+        android:layout_marginBottom="48dp"
         android:orientation="vertical">
 
-        <LinearLayout
+        <TextView
+            android:id="@+id/dreamGreeting"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:baselineAligned="true">
-
-            <TextClock
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:format12Hour="h:mm"
-                android:format24Hour="HH:mm"
-                android:textColor="#E6FFFFFF"
-                android:textSize="120sp"
-                android:fontFamily="@font/sf_pro"
-                android:fontVariationSettings="'wght' 200"
-                android:letterSpacing="0.0"
-                android:includeFontPadding="false" />
-
-            <TextClock
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:format12Hour="a"
-                android:format24Hour=""
-                android:textColor="#99FFFFFF"
-                android:textSize="22sp"
-                android:fontFamily="@font/sf_pro"
-                android:fontVariationSettings="'wght' 500"
-                android:letterSpacing="0.0083" />
-        </LinearLayout>
-
-        <TextClock
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="6dp"
-            android:layout_marginTop="4dp"
-            android:format12Hour="@string/date_format"
-            android:format24Hour="@string/date_format"
-            android:textColor="#8CFFFFFF"
-            android:textSize="18sp"
+            android:singleLine="true"
+            android:textColor="#FFFFFFFF"
+            android:textSize="30sp"
+            android:letterSpacing="0.0044"
             android:fontFamily="@font/sf_pro"
-            android:fontVariationSettings="'wght' 400"
-            android:letterSpacing="0.0103" />
+            android:fontVariationSettings="'wght' 600, 'opsz' 28"
+            android:shadowColor="#80000000"
+            android:shadowDy="2"
+            android:shadowRadius="14"
+            android:includeFontPadding="false" />
+
+        <LinearLayout
+            android:id="@+id/dreamWeather"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/dreamWxIcon"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:importantForAccessibility="no" />
+
+            <TextView
+                android:id="@+id/dreamWxText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:singleLine="true"
+                android:textColor="#F2FFFFFF"
+                android:textSize="17sp"
+                android:letterSpacing="0.0115"
+                android:fontFamily="@font/sf_pro"
+                android:fontVariationSettings="'wght' 500, 'opsz' 28"
+                android:shadowColor="#80000000"
+                android:shadowDy="1"
+                android:shadowRadius="10" />
+        </LinearLayout>
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/dreamPlace"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="56dp"
+        android:layout_marginBottom="50dp"
+        android:singleLine="true"
+        android:textColor="#CCFFFFFF"
+        android:textSize="14sp"
+        android:letterSpacing="0.0137"
+        android:fontFamily="@font/sf_pro"
+        android:fontVariationSettings="'wght' 500, 'opsz' 28"
+        android:shadowColor="#80000000"
+        android:shadowDy="1"
+        android:shadowRadius="10" />
 </FrameLayout>

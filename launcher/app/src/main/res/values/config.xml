@@ -68,6 +68,8 @@
 
     <!-- Greeting top left on Home: "Good morning, <name>" by the time of day. Empty: no greeting. -->
     <string name="owner_name" translatable="false">Wevs</string>
+    <!-- Day-month, e.g. 05-05 for 5 May: "Happy birthday, <name>" that day. Empty: none. -->
+    <string name="owner_birthday" translatable="false">05-05</string>
 
     <!-- Weather under the greeting, from Open-Meteo (free, no key). Empty place: no weather.
          Coordinates in decimal degrees; unit "celsius" or "fahrenheit". -->

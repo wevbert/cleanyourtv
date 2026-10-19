@@ -1,39 +1,61 @@
 package com.gathin.tvhome;
 
-import android.animation.ArgbEvaluator;
 import android.animation.ValueAnimator;
-import android.graphics.drawable.GradientDrawable;
+import android.graphics.Bitmap;
 import android.os.Handler;
 import android.os.Looper;
 import android.service.dreams.DreamService;
 import android.view.View;
+import android.view.animation.LinearInterpolator;
+import android.widget.ImageView;
+import android.widget.TextView;
 
-import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
- * Screensaver: the launcher's thin clock and date on black, over a slow ambient glow.
- * Every minute the clock drifts to a new spot and the glow shifts colour, so nothing burns in.
- * No network, no images: cheap enough for a 1 GB TV.
+ * Screensaver, tvOS aerial style: an aerial drifting in a slow pan and zoom, crossfading to the next
+ * every few minutes, with the time, the place, the greeting and the weather over it. Today's photo is
+ * the one Home already holds; the next is decoded off the main thread only while the screensaver runs
+ * and freed when it ends. The drift moves the view, not its pixels, so the GPU only composites it.
  */
 public class ClockDream extends DreamService {
 
-    private static final long MOVE_MS = 60_000L;
-    /** Deep, low-brightness glow colours; the glow is drawn at partial alpha on black. */
-    private static final int[] PALETTE = {0xFF2B5CFF, 0xFF00A39A, 0xFF8A3FFC, 0xFFE0661B, 0xFFD6336C};
+    private static final long PHOTO_MS = 3 * 60_000L;
+    private static final long MINUTE_MS = 60_000L;
+    private static final ExecutorService IO = Executors.newSingleThreadExecutor();
 
     private final Handler handler = new Handler(Looper.getMainLooper());
-    private final Random random = new Random();
-    private View content;
-    private GradientDrawable glow;
-    private int colorIndex;
-    private int glowColor;
+    private ImageView front, back;
+    private Bitmap frontBmp, backBmp;
+    private int photo;
+    private boolean drifting;
+    private float density;
+    private int driftSign = 1;
+    private TextView greeting, place, wxText;
+    private View weatherRow, textBlock;
+    private ImageView wxIcon;
 
-    private final Runnable tick = new Runnable() {
+    private final Runnable nextPhoto = new Runnable() {
         @Override
         public void run() {
-            moveClock();
-            shiftGlow();
-            handler.postDelayed(this, MOVE_MS);
+            int next = (photo + 1) % Wallpapers.PHOTOS.length;
+            IO.execute(() -> {
+                Bitmap b = Wallpapers.get(getApplicationContext(), next);
+                handler.post(() -> {
+                    if (!drifting || b == null) return;
+                    crossfadeTo(next, b);
+                });
+            });
+            handler.postDelayed(this, PHOTO_MS);
+        }
+    };
+
+    private final Runnable minute = new Runnable() {
+        @Override
+        public void run() {
+            updateText();
+            handler.postDelayed(this, MINUTE_MS);
         }
     };
 
@@ -42,77 +64,120 @@ public class ClockDream extends DreamService {
         super.onAttachedToWindow();
         setInteractive(false);   // any key wakes the TV back to where it was
         setFullscreen(true);
-        setScreenBright(false);
+        setScreenBright(true);
         setContentView(R.layout.dream_clock);
-
-        content = findViewById(R.id.dreamContent);
-        View ambient = findViewById(R.id.dreamAmbient);
-        glow = new GradientDrawable();
-        glow.setGradientType(GradientDrawable.RADIAL_GRADIENT);
-        ambient.setBackground(glow);
-        ambient.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) ->
-                glow.setGradientRadius((r - l) * 0.55f));
-        colorIndex = random.nextInt(PALETTE.length);
-        setGlow(PALETTE[colorIndex]);
+        density = getResources().getDisplayMetrics().density;
+        front = findViewById(R.id.photoA);
+        back = findViewById(R.id.photoB);
+        greeting = findViewById(R.id.dreamGreeting);
+        place = findViewById(R.id.dreamPlace);
+        weatherRow = findViewById(R.id.dreamWeather);
+        wxIcon = findViewById(R.id.dreamWxIcon);
+        wxText = findViewById(R.id.dreamWxText);
+        textBlock = findViewById(R.id.dreamText);
     }
 
     @Override
     public void onDreamingStarted() {
         super.onDreamingStarted();
-        content.setAlpha(0f);
-        content.post(() -> {
-            placeClock();
-            content.animate().alpha(1f).setDuration(1200).start();
-        });
-        handler.postDelayed(tick, MOVE_MS);
+        drifting = true;
+        photo = Wallpapers.todayIndex();
+        frontBmp = Wallpapers.today(this);
+        front.setImageBitmap(frontBmp);
+        place.setText(Wallpapers.PLACES[photo]);
+        updateText();
+        drift(front);
+        View root = (View) front.getParent();
+        root.setAlpha(0f);
+        root.animate().alpha(1f).setDuration(1500).start();
+        handler.postDelayed(nextPhoto, PHOTO_MS);
+        handler.postDelayed(minute, MINUTE_MS);
     }
 
     @Override
     public void onDreamingStopped() {
-        handler.removeCallbacks(tick);
+        stop();
         super.onDreamingStopped();
     }
 
     @Override
     public void onDetachedFromWindow() {
-        handler.removeCallbacks(tick);
+        stop();
         super.onDetachedFromWindow();
     }
 
-    private void moveClock() {
-        content.animate().alpha(0f).setDuration(900).withEndAction(() -> {
-            placeClock();
-            content.animate().alpha(1f).setDuration(1200).start();
+    private void stop() {
+        drifting = false;
+        handler.removeCallbacks(nextPhoto);
+        handler.removeCallbacks(minute);
+        front.animate().cancel();
+        back.animate().cancel();
+        front.setImageDrawable(null);
+        back.setImageDrawable(null);
+        // Free whatever the screensaver decoded itself; the shared photo stays for Home.
+        release(frontBmp);
+        release(backBmp);
+        frontBmp = backBmp = null;
+    }
+
+    private static void release(Bitmap b) {
+        if (b != null && !Wallpapers.isShared(b) && !b.isRecycled()) b.recycle();
+    }
+
+    /** A slow Ken Burns move: zoom from 100% to 108% while panning, alternating direction each photo. */
+    private void drift(ImageView v) {
+        v.animate().cancel();
+        v.setScaleX(1f);
+        v.setScaleY(1f);
+        v.setTranslationX(0f);
+        if (!ValueAnimator.areAnimatorsEnabled()) return;
+        driftSign = -driftSign;
+        v.animate().scaleX(1.08f).scaleY(1.08f).translationX(driftSign * 28 * density)
+                .setDuration(PHOTO_MS + 4000).setInterpolator(new LinearInterpolator()).start();
+    }
+
+    private void crossfadeTo(int index, Bitmap b) {
+        Bitmap old = frontBmp;
+        back.setImageBitmap(b);
+        backBmp = b;
+        drift(back);
+        back.bringToFront();
+        place.bringToFront();
+        textBlock.bringToFront();
+        findViewById(R.id.dreamClock).bringToFront();
+        back.setAlpha(0f);
+        place.animate().alpha(0f).setDuration(700).withEndAction(() -> {
+            place.setText(Wallpapers.PLACES[index]);
+            place.animate().alpha(1f).setDuration(900).start();
         }).start();
+        back.animate().alpha(1f).setDuration(2500).withEndAction(() -> {
+            // The faded-out photo is no longer drawn: let it go.
+            front.animate().cancel();
+            front.setImageDrawable(null);
+            release(old);
+            ImageView t = front;
+            front = back;
+            back = t;
+            frontBmp = backBmp;
+            backBmp = null;
+        }).start();
+        photo = index;
     }
 
-    /** A random spot that keeps the whole clock on screen, with the glow centred behind it. */
-    private void placeClock() {
-        View parent = (View) content.getParent();
-        int maxX = Math.max(0, parent.getWidth() - content.getWidth());
-        int maxY = Math.max(0, parent.getHeight() - content.getHeight());
-        float x = maxX * (0.1f + 0.8f * random.nextFloat());
-        float y = maxY * (0.1f + 0.8f * random.nextFloat());
-        content.setX(x);
-        content.setY(y);
-        if (parent.getWidth() > 0 && parent.getHeight() > 0) {
-            glow.setGradientCenter((x + content.getWidth() / 2f) / parent.getWidth(),
-                    (y + content.getHeight() / 2f) / parent.getHeight());
+    private void updateText() {
+        String name = getString(R.string.owner_name).trim();
+        greeting.setVisibility(name.isEmpty() ? View.GONE : View.VISIBLE);
+        if (!name.isEmpty()) greeting.setText(Greeting.now(this, name).text);
+        Weather.Now now = getString(R.string.weather_place).trim().isEmpty() ? null
+                : new Weather(this, getString(R.string.weather_latitude).trim(),
+                getString(R.string.weather_longitude).trim(), getString(R.string.weather_unit).trim()).cached();
+        if (now == null) {
+            weatherRow.setVisibility(View.GONE);
+            return;
         }
-    }
-
-    private void shiftGlow() {
-        int from = glowColor;
-        colorIndex = (colorIndex + 1) % PALETTE.length;
-        ValueAnimator anim = ValueAnimator.ofObject(new ArgbEvaluator(), from, PALETTE[colorIndex]);
-        anim.setDuration(8000);
-        anim.addUpdateListener(a -> setGlow((int) a.getAnimatedValue()));
-        anim.start();
-    }
-
-    private void setGlow(int color) {
-        glowColor = color;
-        int c = color & 0x00FFFFFF;
-        glow.setColors(new int[]{0x40000000 | c, 0x14000000 | c, 0x00000000 | c});
+        wxIcon.setImageResource(Weather.icon(now.code, now.day));
+        String note = MainActivity.weatherNote(this, now);
+        wxText.setText(now.temp + "°  " + getString(Weather.label(now.code)) + (note.isEmpty() ? "" : "  ·  " + note));
+        weatherRow.setVisibility(View.VISIBLE);
     }
 }

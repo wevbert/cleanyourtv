@@ -29,8 +29,11 @@ final class Weather {
         final int temp, high, low, code;
         final boolean day;
         final long at;
+        /** Local hour (0-23) of the first likely rain in the next 6 hours, or -1. */
+        final int rainHour;
 
-        Now(int temp, int high, int low, int code, boolean day, long at) {
+        Now(int temp, int high, int low, int code, boolean day, long at, int rainHour) {
+            this.rainHour = rainHour;
             this.temp = temp;
             this.high = high;
             this.low = low;
@@ -63,7 +66,7 @@ final class Weather {
         if (at == 0 || System.currentTimeMillis() - at > STALE_MS) return null;
         if (!(lat + "," + lon + "," + unit).equals(prefs.getString("for", ""))) return null;
         return new Now(prefs.getInt("temp", 0), prefs.getInt("high", 0), prefs.getInt("low", 0),
-                prefs.getInt("code", 0), prefs.getBoolean("day", true), at);
+                prefs.getInt("code", 0), prefs.getBoolean("day", true), at, prefs.getInt("rainHour", -1));
     }
 
     /** Fetches in the background when the cached reading is older than REFRESH_MS. */
@@ -91,6 +94,7 @@ final class Weather {
                 "https://api.open-meteo.com/v1/forecast?latitude=%s&longitude=%s"
                         + "&current=temperature_2m,weather_code,is_day"
                         + "&daily=temperature_2m_max,temperature_2m_min&forecast_days=1"
+                        + "&hourly=precipitation_probability,weather_code&forecast_hours=7"
                         + "&timezone=auto&temperature_unit=%s", lat, lon, unit));
         HttpURLConnection c = (HttpURLConnection) url.openConnection();
         c.setConnectTimeout(8000);
@@ -102,20 +106,39 @@ final class Weather {
             JSONObject json = new JSONObject(out.toString("UTF-8"));
             JSONObject cur = json.getJSONObject("current");
             JSONObject daily = json.getJSONObject("daily");
+            // The first coming hour with rain likely (60% or a rain code), within 6 hours.
+            int rainHour = -1;
+            JSONObject hourly = json.optJSONObject("hourly");
+            if (hourly != null) {
+                org.json.JSONArray times = hourly.getJSONArray("time");
+                org.json.JSONArray prob = hourly.getJSONArray("precipitation_probability");
+                org.json.JSONArray codes = hourly.getJSONArray("weather_code");
+                for (int i = 1; i < times.length(); i++) {
+                    if (prob.optInt(i, 0) >= 60 || isRain(codes.optInt(i, 0))) {
+                        String t = times.getString(i);   // local time, "2026-10-19T16:00"
+                        rainHour = Integer.parseInt(t.substring(t.indexOf('T') + 1, t.indexOf('T') + 3));
+                        break;
+                    }
+                }
+            }
             Now now = new Now(
                     (int) Math.round(cur.getDouble("temperature_2m")),
                     (int) Math.round(daily.getJSONArray("temperature_2m_max").getDouble(0)),
                     (int) Math.round(daily.getJSONArray("temperature_2m_min").getDouble(0)),
                     cur.getInt("weather_code"),
                     cur.optInt("is_day", 1) == 1,
-                    System.currentTimeMillis());
+                    System.currentTimeMillis(), rainHour);
             prefs.edit().putLong("at", now.at).putInt("temp", now.temp).putInt("high", now.high)
                     .putInt("low", now.low).putInt("code", now.code).putBoolean("day", now.day)
-                    .putString("for", lat + "," + lon + "," + unit).apply();
+                    .putInt("rainHour", now.rainHour).putString("for", lat + "," + lon + "," + unit).apply();
             return now;
         } finally {
             c.disconnect();
         }
+    }
+
+    static boolean isRain(int code) {
+        return code >= 51 && code <= 67 || code >= 80 && code <= 82 || code >= 95;
     }
 
     /** WMO weather code to a condition name. */

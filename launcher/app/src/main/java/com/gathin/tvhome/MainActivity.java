@@ -82,7 +82,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private String ownerName;
     private View weatherRow;
     private ImageView wxIcon;
-    private TextView wxTemp, wxText;
+    private TextView wxTemp, wxText, wxNote;
+    private View flagLine;
     private ImageView wallView;
     private View btnInputs;
     private TextView btnWifi;
@@ -196,6 +197,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         wxIcon = findViewById(R.id.wxIcon);
         wxTemp = findViewById(R.id.wxTemp);
         wxText = findViewById(R.id.wxText);
+        wxNote = findViewById(R.id.wxNote);
+        flagLine = findViewById(R.id.flagLine);
         if (!getString(R.string.weather_place).trim().isEmpty()) {
             weather = new Weather(this, getString(R.string.weather_latitude).trim(),
                     getString(R.string.weather_longitude).trim(), getString(R.string.weather_unit).trim());
@@ -299,34 +302,19 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      * JPEG costs a 1080p bitmap at most (about 8 MB), which is the price of a wallpaper on a 1 GB TV.
      */
     private void showBuiltInWallpaper() {
-        int day = Calendar.getInstance().get(Calendar.DAY_OF_YEAR);
-        int res = day % 2 == 0 ? R.drawable.wall_napali : R.drawable.wall_seapoint;
-        try {
-            android.graphics.BitmapFactory.Options opts = new android.graphics.BitmapFactory.Options();
-            // Full colour: a 16-bit decode bands visibly in skies and sea. 1920x1080 is 8 MB, decoded once.
-            opts.inPreferredConfig = android.graphics.Bitmap.Config.ARGB_8888;
-            opts.inScaled = false;
-            opts.inMutable = true;
-            addWallpaper(android.graphics.BitmapFactory.decodeResource(getResources(), res, opts));
-        } catch (Exception | OutOfMemoryError e) {
-            // The black background stays.
-        }
+        // Shared with the screensaver and already shaded (Wallpapers.today).
+        Bitmap bmp = Wallpapers.today(this);
+        if (bmp != null) addWallpaper(bmp, false);
     }
 
     /**
      * Shows the picture with the shelf gradient painted into its pixels once, so each frame draws one
      * opaque full-screen layer instead of the window background, the picture and a gradient on top.
      */
-    private void addWallpaper(android.graphics.Bitmap bmp) {
+    private void addWallpaper(android.graphics.Bitmap bmp, boolean bake) {
         if (bmp == null) return;
-        if (bmp.isMutable()) {
-            android.graphics.drawable.Drawable shade = getDrawable(R.drawable.shelf_scrim);
-            if (shade != null) {
-                shade.setBounds(0, 0, bmp.getWidth(), bmp.getHeight());
-                shade.draw(new android.graphics.Canvas(bmp));
-                findViewById(R.id.scrim).setVisibility(View.GONE);
-            }
-        }
+        if (bake) Wallpapers.bake(this, bmp);
+        if (!bake || bmp.isMutable()) findViewById(R.id.scrim).setVisibility(View.GONE);
         // Nothing behind an opaque picture needs painting.
         root.setBackground(null);
         getWindow().setBackgroundDrawable(null);
@@ -348,7 +336,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             opts.inSampleSize = sample;
             opts.inPreferredConfig = android.graphics.Bitmap.Config.ARGB_8888;   // 16-bit bands in skies
             opts.inMutable = true;
-            addWallpaper(android.graphics.BitmapFactory.decodeFile(file.getPath(), opts));
+            addWallpaper(android.graphics.BitmapFactory.decodeFile(file.getPath(), opts), true);
         } catch (Exception | OutOfMemoryError e) {
             // A bad or huge picture must never take the home screen down; the plain colour stays.
         }
@@ -373,21 +361,39 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
     }
 
-    /** "Good morning, Wevs", by the hour. Late at night it stays "Good evening": "Good night" is a goodbye. */
+    /** "Rain around 16:00, take an umbrella", "Raining now, stay dry" or "Hot one today, 34°"; else empty. */
+    static String weatherNote(Context ctx, Weather.Now now) {
+        if (Weather.isRain(now.code)) return ctx.getString(R.string.wx_rain_now);
+        if (now.rainHour >= 0) {
+            boolean h24 = android.text.format.DateFormat.is24HourFormat(ctx);
+            int h = now.rainHour;
+            String at = h24 ? String.format(Locale.ROOT, "%02d:00", h)
+                    : (h % 12 == 0 ? 12 : h % 12) + (h < 12 ? " am" : " pm");
+            return ctx.getString(R.string.wx_rain_at, at);
+        }
+        boolean f = "fahrenheit".equalsIgnoreCase(ctx.getString(R.string.weather_unit).trim());
+        if (now.high >= (f ? 91 : 33)) return ctx.getString(R.string.wx_hot, now.high);
+        return "";
+    }
+
+    /** The occasion, weekend or time-of-day greeting (Greeting), and the flag line on national days. */
     private void updateGreeting() {
         if (ownerName.isEmpty()) return;
-        int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
-        int part = hour >= 5 && hour < 12 ? R.string.good_morning
-                : hour >= 12 && hour < 17 ? R.string.good_afternoon : R.string.good_evening;
-        welcome.setText(getString(R.string.greeting_name, getString(part), ownerName));
+        Greeting g = Greeting.now(this, ownerName);
+        welcome.setText(g.text);
+        flagLine.setVisibility(g.national ? View.VISIBLE : View.GONE);
     }
 
     /** The weather line under the greeting: icon, temperature, conditions and today's range. */
     private void showWeather(Weather.Now now) {
         if (now == null) {
             weatherRow.setVisibility(View.GONE);
+            wxNote.setVisibility(View.GONE);
             return;
         }
+        String note = weatherNote(this, now);
+        wxNote.setText(note);
+        wxNote.setVisibility(note.isEmpty() ? View.GONE : View.VISIBLE);
         wxIcon.setImageResource(Weather.icon(now.code, now.day));
         wxTemp.setText(now.temp + "\u00B0");
         wxText.setText(getString(Weather.label(now.code)) + "   " + getString(R.string.wx_high_low, now.high, now.low));
@@ -747,7 +753,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 if (tim.getInputState(info.getId()) == TvInputManager.INPUT_STATE_CONNECTED) hdmiConnected++;
             }
             boolean hdmiStateBogus = hdmiPorts > 1 && hdmiConnected == hdmiPorts;
+            // A CEC device that is on (a console, a soundbar) is listed as a child of its HDMI port, under the
+            // name it announces ("PlayStation 5"): name the port's row after it instead of a second row.
+            java.util.Map<String, String> deviceOnPort = new java.util.HashMap<>();
             for (TvInputInfo info : inputs) {
+                if (info.getParentId() == null) continue;
+                CharSequence n = info.loadLabel(this);
+                if (n != null && n.length() > 0) deviceOnPort.put(info.getParentId(), n.toString());
+            }
+            for (TvInputInfo info : inputs) {
+                if (info.getParentId() != null) continue;
                 if (info.getType() == TvInputInfo.TYPE_TUNER
                         && (info.getServiceInfo().applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0) {
                     // Prefer a hardware tuner: the framework names those ".../HW<n>". System apps such as
@@ -767,8 +782,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 int state = hdmi && hdmiStateBogus ? -1 : tim.getInputState(id);
                 if (!hdmi && rows.getChildCount() > 0 && !sawNonHdmi) addSeparator(rows);
                 if (!hdmi) sawNonHdmi = true;
-                addInputRow(rows, popup, hdmi ? R.drawable.ic_input : R.drawable.ic_av, label, state,
-                        () -> openInput(id));
+                String device = deviceOnPort.get(id);
+                View row = addInputRow(rows, popup, hdmi ? R.drawable.ic_input : R.drawable.ic_av,
+                        device != null ? device : label, state, () -> openInput(id));
+                if (device != null) {
+                    // The port's own name moves to the status column: "PlayStation 5   HDMI 1".
+                    TextView status = row.findViewById(R.id.status);
+                    status.setText(label);
+                    status.setVisibility(View.VISIBLE);
+                }
             }
         }
         // Nothing to list where there is no TvInputManager: the TV's own source panel switches inputs.
@@ -832,7 +854,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         rows.addView(line, lp);
     }
 
-    private void addInputRow(LinearLayout rows, PopupWindow popup, int iconRes, String title, int state, Runnable action) {
+    private View addInputRow(LinearLayout rows, PopupWindow popup, int iconRes, String title, int state, Runnable action) {
         View row = getLayoutInflater().inflate(R.layout.item_input, rows, false);
         ((ImageView) row.findViewById(R.id.icon)).setImageResource(iconRes);
         ((TextView) row.findViewById(R.id.title)).setText(title);
@@ -855,6 +877,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             action.run();
         });
         rows.addView(row);
+        return row;
     }
 
     // ---- module cards ----------------------------------------------------------------------------

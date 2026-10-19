@@ -62,6 +62,21 @@
             android:shadowRadius="14"
             android:includeFontPadding="false" />
 
+        <!-- Ghana's red, gold and green, on national days only. -->
+        <LinearLayout
+            android:id="@+id/flagLine"
+            android:layout_width="84dp"
+            android:layout_height="4dp"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal"
+            android:background="@drawable/flag_clip"
+            android:clipToOutline="true"
+            android:visibility="gone">
+            <View android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:background="#FFCE1126" />
+            <View android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:background="#FFFCD116" />
+            <View android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:background="#FF006B3F" />
+        </LinearLayout>
+
         <LinearLayout
             android:id="@+id/weatherRow"
             android:layout_width="wrap_content"
@@ -107,6 +122,23 @@
                 android:shadowDy="1"
                 android:shadowRadius="10" />
         </LinearLayout>
+
+        <!-- Rain coming, or a hot day; empty otherwise. -->
+        <TextView
+            android:id="@+id/wxNote"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:singleLine="true"
+            android:textColor="#C7FFFFFF"
+            android:textSize="14sp"
+            android:letterSpacing="0.0137"
+            android:fontFamily="@font/sf_pro"
+            android:fontVariationSettings="'wght' 500, 'opsz' 28"
+            android:shadowColor="#73000000"
+            android:shadowDy="1"
+            android:shadowRadius="10"
+            android:visibility="gone" />
     </LinearLayout>
 
     <LinearLayout
