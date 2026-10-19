@@ -131,13 +131,26 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         @Override
         public void onInputAdded(String inputId) {
             updateInputsButton();
+            if (adapter != null) adapter.refreshConsole();   // the console's CEC device appearing
         }
 
         @Override
         public void onInputRemoved(String inputId) {
             updateInputsButton();
+            if (adapter != null) adapter.refreshConsole();
+        }
+
+        @Override
+        public void onInputStateChanged(String inputId, int state) {
+            // The console waking or going to standby: only its own tile redraws.
+            if (adapter != null) adapter.refreshConsole();
         }
     };
+
+    @Override
+    public void onOpenInput(String inputId) {
+        openInput(inputId);
+    }
     /** Listens for any VPN coming up or going down, even one this app's traffic is excluded from. */
     private final ConnectivityManager.NetworkCallback vpnCallback = new ConnectivityManager.NetworkCallback() {
         @Override

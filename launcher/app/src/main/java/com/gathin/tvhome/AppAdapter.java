@@ -52,17 +52,22 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
 
         /** Called for a D-pad direction key on a tile. Return true when handled (focus stays put). */
         boolean onTileVerticalKey(int position, int keyCode);
+
+        /** The console tile was pressed: switch to its HDMI input. */
+        void onOpenInput(String inputId);
     }
 
     static final class Entry {
-        static final int APP = 0, HOME_SETTINGS = 1, CARD = 2;
+        static final int APP = 0, HOME_SETTINGS = 1, CARD = 2, CONSOLE = 3;
 
         final int kind;
         final String label;
         final ComponentName component;
         final String pkg;
-        final Drawable banner;
+        Drawable banner;
         final Drawable icon;
+        /** CONSOLE only: the HDMI input it switches to. */
+        String inputId;
         /** Text under the tile when it is focused in the grid: the label, plus the caption for a card. */
         final String name;
         /** Ambient glow colour; 0 until sampled from the banner, or the card's accent from the start. */
@@ -170,6 +175,19 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             if (ca != cb) return ca ? -1 : 1;
             return a.label.compareToIgnoreCase(b.label);
         });
+        // The console's tile (config console_input): sorted by its "console" entry in dock_apps.
+        Entry console = consoleEntry();
+        if (console != null) {
+            int at = favourites.indexOf(CONSOLE_KEY);
+            int pos = 0;
+            if (at >= 0) {
+                while (pos < fresh.size() && favourites.indexOf(fresh.get(pos).pkg) >= 0
+                        && favourites.indexOf(fresh.get(pos).pkg) < at) pos++;
+            } else {
+                pos = fresh.size();
+            }
+            fresh.add(pos, console);
+        }
         // Optional "Default home" tile (config.xml), only when this TV actually has a home-screen picker.
         if (showHomeSettings
                 && pm.resolveActivity(new Intent(Settings.ACTION_HOME_SETTINGS), 0) != null) {
@@ -180,6 +198,50 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         items.clear();
         items.addAll(fresh);
         notifyDataSetChanged();
+    }
+
+    /** dock_apps entry that places the console tile. */
+    static final String CONSOLE_KEY = "console";
+
+    /**
+     * The console on the configured HDMI port: named after the CEC device the TV sees there ("PlayStation 5")
+     * and "On" while that device reports itself awake. Null when no port is configured or it is gone.
+     */
+    private Entry consoleEntry() {
+        String port = ctx.getString(R.string.console_input).trim();
+        if (port.isEmpty()) return null;
+        android.media.tv.TvInputManager tim = ctx.getSystemService(android.media.tv.TvInputManager.class);
+        if (tim == null) return null;
+        boolean portFound = false;
+        String name = null;
+        boolean on = false;
+        for (android.media.tv.TvInputInfo info : tim.getTvInputList()) {
+            if (info.getId().equals(port)) portFound = true;
+            if (port.equals(info.getParentId())) {
+                CharSequence l = info.loadLabel(ctx);
+                if (l != null && l.length() > 0) name = l.toString();
+                on |= tim.getInputState(info.getId()) == android.media.tv.TvInputManager.INPUT_STATE_CONNECTED;
+            }
+        }
+        if (!portFound) return null;
+        if (name == null) name = ctx.getString(R.string.console_name);
+        Entry e = new Entry(Entry.CONSOLE, name, new ComponentName(CONSOLE_KEY, "input"),
+                ConsoleArt.get(ctx, ctx.getString(R.string.console_short), on), null, null, 0);
+        e.inputId = port;
+        return e;
+    }
+
+    /** The console woke or slept: redraw just its tile. */
+    void refreshConsole() {
+        Entry fresh = consoleEntry();
+        for (int i = 0; i < items.size(); i++) {
+            Entry e = items.get(i);
+            if (e.kind != Entry.CONSOLE || fresh == null) continue;
+            if (e.banner != fresh.banner) {
+                e.banner = fresh.banner;
+                notifyItemChanged(i);
+            }
+        }
     }
 
     @NonNull
@@ -225,6 +287,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         }
         h.card.setOnClickListener(v -> launch(e, h.card));
         h.card.setOnLongClickListener(v -> {
+            if (e.kind == Entry.CONSOLE) return true;
             Intent i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + e.pkg));
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             try {
@@ -237,6 +300,10 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
 
     /** Opens the tile's activity by explicit component, with no extras: a card can name nothing else. */
     private void launch(Entry e, View card) {
+        if (e.kind == Entry.CONSOLE) {
+            listener.onOpenInput(e.inputId);
+            return;
+        }
         if (e.kind == Entry.HOME_SETTINGS) {
             ctx.startActivity(new Intent(ctx, HomeSettingsActivity.class)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));

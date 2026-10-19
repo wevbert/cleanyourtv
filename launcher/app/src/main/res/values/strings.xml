@@ -94,4 +94,8 @@
     <string name="cap_badge_off">Cap off</string>
     <string name="data_month_line">%1$s used this month</string>
     <string name="data_everything_else">Everything else</string>
+    <string name="console_name">Console</string>
+    <string name="console_short">PS5</string>
+    <string name="console_on">On</string>
+    <string name="console_standby">Standby</string>
 </resources>

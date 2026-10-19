@@ -14,6 +14,8 @@
         <item>com.apple.atve.androidtv.appletv</item>
         <item>com.dstvmobile.android</item>
         <item>com.showmax.showmax.google</item>
+        <!-- The console tile (console_input below). -->
+        <item>console</item>
     </string-array>
 
     <!-- Apps never shown as tiles (e.g. the Live TV app, which the Inputs menu already covers). -->
@@ -77,4 +79,8 @@
     <string name="weather_latitude" translatable="false">5.6037</string>
     <string name="weather_longitude" translatable="false">-0.1870</string>
     <string name="weather_unit" translatable="false">celsius</string>
+
+    <!-- Console tile: the HDMI input it switches to (TvInputInfo id; HW16 is HDMI 2 here). Empty: no tile.
+         Its name and On/Standby come from the CEC device the TV sees on that port. -->
+    <string name="console_input" translatable="false">com.tcl.tvinput/.TvPassThroughService/HW16</string>
 </resources>

@@ -62,6 +62,11 @@ use.
   the data panel adds a 7-day bar chart with the week's top app shaded (WeekBars, drawn in onDraw).
 - The Wi-Fi pill's badge is the cap light: green "Cap" while the limiter runs with the cap on, red
   "Cap off" otherwise (a real VPN app's badge still takes precedence).
+- Console tile (Entry.CONSOLE, ConsoleArt): sixth top-row slot ("console" in dock_apps), PlayStation-blue
+  "PS5" face with an On/Standby pill from the CEC device on config console_input (HDMI 2, HW16). OK switches
+  to HDMI 2, which also wakes the PS5 over CEC. Redraws only on TvInputCallback changes.
+- PS5 picture: Game Master forced On for HDMI 2 (was Auto). The panel is 4K 60 Hz (supported modes 60/30),
+  and the PS5 already sends 3840x2160@60 HDR10, so the HDMI 2.1 (EDID) mode was left as it is.
 - Features to keep: the time capsule top right holding Inputs, Wi-Fi and Settings, the Inputs dropdown
   with HDMI 1–3 and Live TV, the Clock screensaver, InputKeyService for the remote's Input key.
 - Freeing other apps from the launcher does not work on this firmware: TCL ignores an app's
