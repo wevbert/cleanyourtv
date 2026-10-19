@@ -2,6 +2,23 @@ plugins {
     id 'com.android.application'
 }
 
+// SF Pro is Apple's font: it is git-ignored and never committed, so a fresh clone has no copy. Take it
+// from the Mac's installed fonts when it is missing, or stop here with what to do instead of a
+// resource error deep in the build.
+def sfPro = file('src/main/res/font/sf_pro.ttf')
+if (!sfPro.exists()) {
+    def installed = ['/Library/Fonts/SF-Pro.ttf', "${System.getProperty('user.home')}/Library/Fonts/SF-Pro.ttf"]
+            .collect { new File(it) }.find { it.exists() }
+    if (installed == null) {
+        throw new GradleException("SF Pro is missing: ${sfPro}\n" +
+                "Install SF Pro from https://developer.apple.com/fonts/ (it puts SF-Pro.ttf in /Library/Fonts), " +
+                "or copy SF-Pro.ttf to the path above, then build again.")
+    }
+    sfPro.parentFile.mkdirs()
+    java.nio.file.Files.copy(installed.toPath(), sfPro.toPath())
+    logger.lifecycle("Copied SF Pro from ${installed}")
+}
+
 android {
     namespace 'com.gathin.tvhome'
     compileSdk 34

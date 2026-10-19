@@ -18,5 +18,9 @@ export MSYS_NO_PATHCONV=1
   echo "settings put global window_animation_scale 1.0"
   echo "settings put global transition_animation_scale 1.0"
   echo "settings put global animator_duration_scale 1.0"
+  # Background-app cap and the feature-flag sync lock (see the launcher's tuning notes); no-ops where
+  # nothing was set, and harmless errors on Android 9, which has no device_config.
+  echo "device_config delete activity_manager max_cached_processes 2>/dev/null; echo cap-cleared"
+  echo "device_config set_sync_disabled_for_tests none 2>/dev/null; echo flag-sync-restored"
   echo "pm list packages -d"
 } | "$PY" -I tools/tv.py --batch
