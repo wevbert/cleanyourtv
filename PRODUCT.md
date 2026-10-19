@@ -50,6 +50,9 @@ use.
   uncompressed: layout fontVariationSettings leaked ~3 MB of native typefaces per screensaver run, and
   Android 12 keeps finished screensaver activities, so ClockDream empties itself on detach. Measured
   19 Oct 2026: Home 58 MB, 67 MB after the first screensaver run, then flat.
+- Data panel: the Wi-Fi button opens Wi-Fi data today / this week / this month and the top 3 apps this
+  month (NetworkStatsManager; usage access granted at install by appops GET_USAGE_STATS), plus a row into
+  Wi-Fi settings. Built once and refilled, icons cached: reopening it costs no memory (measured).
 - Features to keep: the time capsule top right holding Inputs, Wi-Fi and Settings, the Inputs dropdown
   with HDMI 1–3 and Live TV, the Clock screensaver, InputKeyService for the remote's Input key.
 - Freeing other apps from the launcher does not work on this firmware: TCL ignores an app's

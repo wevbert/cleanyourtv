@@ -12,6 +12,7 @@ import android.content.IntentFilter;
 import android.content.pm.ApplicationInfo;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
 import android.media.tv.TvContract;
@@ -239,7 +240,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnWifi.setOnFocusChangeListener(openOnFocus);
         btnSettings.setOnFocusChangeListener(openOnFocus);
         btnInputs.setOnClickListener(v -> showInputs());
-        btnWifi.setOnClickListener(v -> openNetworkPill());
+        btnWifi.setOnClickListener(v -> showDataPanel());
         btnWifi.setOnLongClickListener(v -> {
             open(new Intent(Settings.ACTION_WIFI_SETTINGS));
             return true;
@@ -651,6 +652,82 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         b.setPaddingRelative(b.getPaddingStart(), b.getPaddingTop(), (int) ((open ? 14 : 8) * density), b.getPaddingBottom());
     }
 
+    /** The data panel, built once and refilled on each open, so reopening it allocates almost nothing. */
+    private PopupWindow dataPopup;
+    private View dataPanel;
+    private TextView dataNetwork, dataNote;
+    private final TextView[] dataValues = new TextView[3];
+    private final View[] dataRows = new View[3];
+    private int dataToken;
+
+    /** Under the Wi-Fi button: data used today, this week and this month, the top apps, and Wi-Fi settings. */
+    private void showDataPanel() {
+        if (dataPopup == null) buildDataPanel();
+        openPopup = dataPopup;
+        dataNetwork.setText(btnWifi.getContentDescription());
+        for (TextView v : dataValues) v.setText("\u2013");
+        for (View r : dataRows) r.setVisibility(View.GONE);
+        dataNote.setVisibility(View.GONE);
+        dropIn(dataPopup, dataPanel, btnWifi, Gravity.END);
+        ((LinearLayout) dataPanel.findViewById(R.id.rows)).getChildAt(0).requestFocus();
+        // Read off the main thread; the panel opens at once and fills in a moment later.
+        final int token = ++dataToken;
+        final android.content.Context app = getApplicationContext();
+        new Thread(() -> {
+            DataUsage d = DataUsage.read(app, dataRows.length);
+            handler.post(() -> {
+                if (token != dataToken || !dataPopup.isShowing()) return;
+                if (d == null) {
+                    dataNote.setText(R.string.data_no_access);
+                    dataNote.setVisibility(View.VISIBLE);
+                    return;
+                }
+                dataValues[0].setText(DataUsage.format(d.today));
+                dataValues[1].setText(DataUsage.format(d.week));
+                dataValues[2].setText(DataUsage.format(d.month));
+                for (int i = 0; i < d.top.size() && i < dataRows.length; i++) {
+                    DataUsage.App a = d.top.get(i);
+                    View r = dataRows[i];
+                    ((ImageView) r.findViewById(R.id.icon)).setImageDrawable(a.icon);
+                    ((TextView) r.findViewById(R.id.name)).setText(a.label);
+                    ((TextView) r.findViewById(R.id.amount)).setText(DataUsage.format(a.bytes));
+                    r.setVisibility(View.VISIBLE);
+                }
+            });
+        }, "data-usage").start();
+    }
+
+    private void buildDataPanel() {
+        dataPanel = getLayoutInflater().inflate(R.layout.popup_data, root, false);
+        dataPopup = glassPopup(dataPanel, (int) (300 * density));
+        Typeface semibold = Fonts.sf(this, "'wght' 600, 'opsz' 28"), medium = Fonts.sf(this, "'wght' 500, 'opsz' 28");
+        dataNetwork = dataPanel.findViewById(R.id.dataNetwork);
+        dataNetwork.setTypeface(medium);
+        dataNote = dataPanel.findViewById(R.id.dataNote);
+        dataNote.setTypeface(medium);
+        LinearLayout totals = dataPanel.findViewById(R.id.dataTotals);
+        int[] labels = {R.string.data_today, R.string.data_week, R.string.data_month};
+        for (int i = 0; i < 3; i++) {
+            View t = getLayoutInflater().inflate(R.layout.item_data_total, totals, false);
+            dataValues[i] = t.findViewById(R.id.value);
+            dataValues[i].setTypeface(semibold);
+            TextView label = t.findViewById(R.id.label);
+            label.setTypeface(medium);
+            label.setText(labels[i]);
+            totals.addView(t);
+        }
+        LinearLayout apps = dataPanel.findViewById(R.id.dataApps);
+        for (int i = 0; i < dataRows.length; i++) {
+            View r = getLayoutInflater().inflate(R.layout.item_data_app, apps, false);
+            ((TextView) r.findViewById(R.id.name)).setTypeface(medium);
+            ((TextView) r.findViewById(R.id.amount)).setTypeface(medium);
+            dataRows[i] = r;
+            apps.addView(r);
+        }
+        addInputRow(dataPanel.findViewById(R.id.rows), dataPopup, R.drawable.ic_wifi,
+                getString(R.string.wifi_settings), -1, this::openNetworkPill);
+    }
+
     /** The network pill opens the VPN app when one is configured and installed, otherwise Wi-Fi settings. */
     private void openNetworkPill() {
         Intent i = vpnApp.isEmpty() ? null : getPackageManager().getLeanbackLaunchIntentForPackage(vpnApp);
@@ -856,6 +933,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private View addInputRow(LinearLayout rows, PopupWindow popup, int iconRes, String title, int state, Runnable action) {
         View row = getLayoutInflater().inflate(R.layout.item_input, rows, false);
+        // Cached faces: the layout sets none, so each open of a menu builds no new native typefaces.
+        ((TextView) row.findViewById(R.id.title)).setTypeface(Fonts.sf(this, "'wght' 500, 'opsz' 28"));
+        ((TextView) row.findViewById(R.id.status)).setTypeface(Fonts.sf(this, "'wght' 400, 'opsz' 22"));
         ((ImageView) row.findViewById(R.id.icon)).setImageResource(iconRes);
         ((TextView) row.findViewById(R.id.title)).setText(title);
         TextView status = row.findViewById(R.id.status);

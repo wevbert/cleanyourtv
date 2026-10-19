@@ -29,8 +29,6 @@
         android:duplicateParentState="true"
         android:textSize="15sp"
         android:letterSpacing="0.0132"
-        android:fontFamily="@font/sf_pro"
-        android:fontVariationSettings="'wght' 500"
         android:singleLine="true" />
 
     <View
@@ -47,6 +45,5 @@
         android:textColor="@drawable/pill_text_dim"
         android:duplicateParentState="true"
         android:textSize="11sp"
-        android:fontFamily="@font/sf_pro"
         android:letterSpacing="-0.0117" />
 </LinearLayout>

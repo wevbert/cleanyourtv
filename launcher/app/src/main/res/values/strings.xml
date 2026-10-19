@@ -81,4 +81,10 @@
     <string name="wx_hot">Hot one today, %1$d°</string>
     <string name="place_napali">Nā Pali Coast, Kauaʻi</string>
     <string name="place_seapoint">Sea Point, Cape Town</string>
+    <string name="data_today">Today</string>
+    <string name="data_week">This week</string>
+    <string name="data_month">This month</string>
+    <string name="data_system">Android system</string>
+    <string name="data_no_access">Data usage needs usage access for the launcher</string>
+    <string name="wifi_settings">Wi-Fi settings</string>
 </resources>
