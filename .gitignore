@@ -8,3 +8,5 @@ launcher/local.properties
 # your own TV's dumps (serial, android_id, device names) stay local
 backup/
 .DS_Store
+# Apple's SF Pro, copied from /Library/Fonts for this TV only: never commit or redistribute it
+launcher/app/src/main/res/font/sf_pro.ttf

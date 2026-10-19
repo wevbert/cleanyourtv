@@ -45,8 +45,15 @@
             android:ellipsize="end"
             android:textColor="#FFFFFFFF"
             android:textSize="13sp"
-            android:fontFamily="@font/outfit"
+            android:fontFamily="@font/sf_pro"
             android:visibility="gone" />
+
+        <View
+            android:id="@+id/sheen"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/tile_sheen"
+            android:alpha="0" />
     </FrameLayout>
 
     <TextView
@@ -61,8 +68,8 @@
         android:alpha="0"
         android:translationY="-6dp"
         android:textColor="#F2FFFFFF"
-        android:textSize="14sp"
-        android:fontFamily="@font/outfit"
+        android:textSize="15sp"
+        android:fontFamily="@font/sf_pro"
         android:fontVariationSettings="'wght' 500"
-        android:letterSpacing="0.02" />
+        android:letterSpacing="0" />
 </FrameLayout>

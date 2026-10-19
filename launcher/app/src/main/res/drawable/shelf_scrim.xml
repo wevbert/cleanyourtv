@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Top shelf: the art holds the upper screen and falls to black behind the top row. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient android:angle="270"
+        android:startColor="#33000000"
+        android:centerColor="#59000000"
+        android:centerY="0.5"
+        android:endColor="#F2000000" />
+</shape>

@@ -1,5 +1,7 @@
 package com.gathin.tvhome;
 
+import android.animation.ValueAnimator;
+import android.app.ActivityOptions;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
@@ -19,12 +21,15 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
-import android.view.animation.OvershootInterpolator;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.dynamicanimation.animation.DynamicAnimation;
+import androidx.dynamicanimation.animation.SpringAnimation;
+import androidx.dynamicanimation.animation.SpringForce;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
@@ -47,6 +52,9 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
 
         /** Called for a D-pad direction key on a tile. Return true when handled (focus stays put). */
         boolean onTileVerticalKey(int position, int keyCode);
+
+        /** An app was opened from its tile; Home frees it a while after it is left. */
+        void onLaunched(String pkg);
     }
 
     static final class Entry {
@@ -62,6 +70,8 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         final String name;
         /** Ambient glow colour; 0 until sampled from the banner, or the card's accent from the start. */
         int ambient;
+        /** Top shelf art: the banner sampled to 16x9 and blurred, on first focus. */
+        Bitmap art;
 
         Entry(String label, ComponentName component, Drawable banner, Drawable icon) {
             this(APP, label, component, banner, icon, null, 0);
@@ -79,9 +89,9 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         }
     }
 
-    static final float FOCUS_SCALE = 1.10f;
-    /** Design size of a tile (dp); tiles shrink from here when the columns don't fit, see tileWidthPx. */
-    static final float DESIGN_W_DP = 180f, DESIGN_H_DP = 101f;
+    static final float FOCUS_SCALE = 1.15f;
+    /** Design size of a tile (dp), tvOS's 5:3 icon; tiles shrink from here when the columns don't fit, see tileWidthPx. */
+    static final float DESIGN_W_DP = 180f, DESIGN_H_DP = 108f;
 
     /**
      * Tile width for a grid of this inner width: the cell minus room for the focus zoom and the glass
@@ -204,9 +214,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         h.name.setText(e.name);
         h.name.setVisibility(position < dockSize ? View.INVISIBLE : View.VISIBLE);   // the dock has no labels
         boolean focused = h.card.isFocused();   // a rebind after reload() can hit the focused tile
-        h.name.setAlpha(focused ? 1f : 0f);
-        h.card.setScaleX(focused ? FOCUS_SCALE : 1f);
-        h.card.setScaleY(focused ? FOCUS_SCALE : 1f);
+        h.setFocused(focused, false);
         if (e.banner != null) {
             h.banner.setImageDrawable(e.banner);
             h.banner.setVisibility(View.VISIBLE);
@@ -220,7 +228,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             h.label.setText(e.label);
             h.label.setVisibility(View.VISIBLE);
         }
-        h.card.setOnClickListener(v -> launch(e));
+        h.card.setOnClickListener(v -> launch(e, h.card));
         h.card.setOnLongClickListener(v -> {
             Intent i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + e.pkg));
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -233,7 +241,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
     }
 
     /** Opens the tile's activity by explicit component, with no extras: a card can name nothing else. */
-    private void launch(Entry e) {
+    private void launch(Entry e, View card) {
         if (e.kind == Entry.HOME_SETTINGS) {
             ctx.startActivity(new Intent(ctx, HomeSettingsActivity.class)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
@@ -244,10 +252,20 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
                 .setComponent(e.component)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
         try {
-            ctx.startActivity(i);
+            // Opens out of the tile, as tvOS does; nothing when the TV has animations switched off.
+            ctx.startActivity(i, ValueAnimator.areAnimatorsEnabled()
+                    ? ActivityOptions.makeScaleUpAnimation(card, 0, 0, card.getWidth(), card.getHeight()).toBundle()
+                    : null);
+            listener.onLaunched(e.pkg);
         } catch (Exception ex) {
             Toast.makeText(ctx, ctx.getString(R.string.cant_open, e.label), Toast.LENGTH_SHORT).show();
         }
+    }
+
+    @Override
+    public void onViewRecycled(@NonNull Holder h) {
+        // A tile that scrolled away mid-lift must not come back lifted on another app.
+        h.setFocused(false, false);
     }
 
     @Override
@@ -328,9 +346,70 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         return Color.HSVToColor(hsv);
     }
 
-    /** Corner radius for a tile of this width: 16dp at the design width, proportionally less when smaller. */
+    /** Corner radius for a tile of this width: tvOS's gentle corner, 9dp at the design width. */
     static float cornerRadius(int tileWidthPx, float density) {
-        return 16f * density * Math.min(1f, tileWidthPx / (DESIGN_W_DP * density));
+        return 9f * density * Math.min(1f, tileWidthPx / (DESIGN_W_DP * density));
+    }
+
+    /** Top shelf art for the app at a position, sampled once and cached on the entry. */
+    Bitmap artAt(int position) {
+        if (position < 0 || position >= items.size()) return null;
+        Entry e = items.get(position);
+        if (e.art == null) e.art = sampleArt(e.banner != null ? e.banner : e.icon);
+        return e.art;
+    }
+
+    /**
+     * The banner drawn at 64x36, filtered to 16x9, box-blurred twice and held to a calm brightness:
+     * stretched across the screen with bilinear filtering it reads as a soft field of the app's own
+     * colours, for 576 bytes and no blur pass. White banners (YouTube) stay near black instead of a floodlight.
+     */
+    static Bitmap sampleArt(Drawable live) {
+        if (live == null) return null;
+        // Draw a private copy: changing the bounds of the drawable an ImageView shows would blank the tile.
+        Drawable d = live.getConstantState() != null ? live.getConstantState().newDrawable().mutate() : live;
+        Rect saved = new Rect(d.getBounds());
+        Bitmap big = Bitmap.createBitmap(64, 36, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(big);
+        c.drawColor(Color.BLACK);
+        d.setBounds(0, 0, 64, 36);
+        d.draw(c);
+        d.setBounds(saved);
+        Bitmap small = Bitmap.createScaledBitmap(big, 16, 9, true);
+        big.recycle();
+        int[] px = new int[16 * 9];
+        small.getPixels(px, 0, 16, 0, 0, 16, 9);
+        blur(px, 16, 9);
+        blur(px, 16, 9);
+        float[] hsv = new float[3];
+        for (int i = 0; i < px.length; i++) {
+            Color.colorToHSV(px[i], hsv);
+            hsv[1] = Math.min(1f, hsv[1] * 1.25f);
+            hsv[2] = Math.min(hsv[2], 0.10f + 0.50f * hsv[1]);
+            px[i] = Color.HSVToColor(hsv);
+        }
+        small.setPixels(px, 0, 16, 0, 0, 16, 9);
+        return small;
+    }
+
+    /** 3x3 box blur, edges clamped. */
+    private static void blur(int[] px, int w, int h) {
+        int[] src = px.clone();
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                int r = 0, g = 0, b = 0;
+                for (int dy = -1; dy <= 1; dy++) {
+                    int yy = Math.max(0, Math.min(h - 1, y + dy));
+                    for (int dx = -1; dx <= 1; dx++) {
+                        int col = src[yy * w + Math.max(0, Math.min(w - 1, x + dx))];
+                        r += Color.red(col);
+                        g += Color.green(col);
+                        b += Color.blue(col);
+                    }
+                }
+                px[y * w + x] = Color.rgb(r / 9, g / 9, b / 9);
+            }
+        }
     }
 
     static final class Holder extends RecyclerView.ViewHolder {
@@ -339,6 +418,9 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         final ImageView icon;
         final TextView label;
         final TextView name;
+        final View sheen;
+        private final SpringAnimation scaleX, scaleY;
+        private final float lift;
 
         Holder(View v, TileListener listener) {
             super(v);
@@ -347,12 +429,13 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             icon = v.findViewById(R.id.icon);
             label = v.findViewById(R.id.label);
             name = v.findViewById(R.id.name);
+            sheen = v.findViewById(R.id.sheen);
 
             final float density = v.getResources().getDisplayMetrics().density;
             card.setOutlineProvider(new ViewOutlineProvider() {
                 @Override
                 public void getOutline(View view, Outline outline) {
-                    // 16dp at the design width, scaled down with the tile so small tiles keep the same shape.
+                    // 9dp at the design width, scaled down with the tile so small tiles keep the same shape.
                     outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), cornerRadius(view.getWidth(), density));
                 }
             });
@@ -366,20 +449,48 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
                 return listener != null && pos != RecyclerView.NO_POSITION && listener.onTileVerticalKey(pos, keyCode);
             });
 
+            // The tvOS lift: a quick spring up in scale, a soft shadow under the icon and light across its top.
+            lift = 18f * density;
+            scaleX = new SpringAnimation(card, DynamicAnimation.SCALE_X).setSpring(
+                    new SpringForce(1f).setStiffness(600f).setDampingRatio(0.72f));
+            scaleY = new SpringAnimation(card, DynamicAnimation.SCALE_Y).setSpring(
+                    new SpringForce(1f).setStiffness(600f).setDampingRatio(0.72f));
+            card.addOnLayoutChangeListener((view, l, t, r, b, ol, ot, or, ob) -> {
+                view.setPivotX((r - l) / 2f);
+                view.setPivotY((b - t) / 2f);
+            });
+
             card.setOnFocusChangeListener((view, focused) -> {
-                float s = focused ? FOCUS_SCALE : 1.0f;
-                view.animate().scaleX(s).scaleY(s)
-                        .setDuration(focused ? 260 : 180)
-                        .setInterpolator(new OvershootInterpolator(focused ? 1.6f : 0f))
-                        .start();
-                name.animate().alpha(focused ? 1f : 0f)
-                        .translationY(focused ? density * 4f : -density * 6f)
-                        .setDuration(220).start();
+                setFocused(focused, true);
                 int pos = getBindingAdapterPosition();
                 if (focused && listener != null && pos != RecyclerView.NO_POSITION) {
                     listener.onTileFocused(pos, view);
                 }
             });
+        }
+
+        void setFocused(boolean focused, boolean animate) {
+            float s = focused ? FOCUS_SCALE : 1f;
+            float density = itemView.getResources().getDisplayMetrics().density;
+            if (animate && ValueAnimator.areAnimatorsEnabled()) {
+                scaleX.animateToFinalPosition(s);
+                scaleY.animateToFinalPosition(s);
+                card.animate().translationZ(focused ? lift : 0f).setDuration(focused ? 200 : 150)
+                        .setInterpolator(new DecelerateInterpolator(1.8f)).start();
+                sheen.animate().alpha(focused ? 1f : 0f).setDuration(focused ? 220 : 140).start();
+                name.animate().alpha(focused ? 1f : 0f)
+                        .translationY(focused ? density * 6f : -density * 4f)
+                        .setDuration(200).start();
+            } else {
+                scaleX.cancel();
+                scaleY.cancel();
+                card.setScaleX(s);
+                card.setScaleY(s);
+                card.setTranslationZ(focused ? lift : 0f);
+                sheen.setAlpha(focused ? 1f : 0f);
+                name.setAlpha(focused ? 1f : 0f);
+                name.setTranslationY(focused ? density * 6f : -density * 4f);
+            }
         }
     }
 }
