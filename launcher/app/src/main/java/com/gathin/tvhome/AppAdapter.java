@@ -70,8 +70,6 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         final String name;
         /** Ambient glow colour; 0 until sampled from the banner, or the card's accent from the start. */
         int ambient;
-        /** Top shelf art: the banner sampled to 16x9 and blurred, on first focus. */
-        Bitmap art;
 
         Entry(String label, ComponentName component, Drawable banner, Drawable icon) {
             this(APP, label, component, banner, icon, null, 0);
@@ -349,67 +347,6 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
     /** Corner radius for a tile of this width: tvOS's gentle corner, 9dp at the design width. */
     static float cornerRadius(int tileWidthPx, float density) {
         return 9f * density * Math.min(1f, tileWidthPx / (DESIGN_W_DP * density));
-    }
-
-    /** Top shelf art for the app at a position, sampled once and cached on the entry. */
-    Bitmap artAt(int position) {
-        if (position < 0 || position >= items.size()) return null;
-        Entry e = items.get(position);
-        if (e.art == null) e.art = sampleArt(e.banner != null ? e.banner : e.icon);
-        return e.art;
-    }
-
-    /**
-     * The banner drawn at 64x36, filtered to 16x9, box-blurred twice and held to a calm brightness:
-     * stretched across the screen with bilinear filtering it reads as a soft field of the app's own
-     * colours, for 576 bytes and no blur pass. White banners (YouTube) stay near black instead of a floodlight.
-     */
-    static Bitmap sampleArt(Drawable live) {
-        if (live == null) return null;
-        // Draw a private copy: changing the bounds of the drawable an ImageView shows would blank the tile.
-        Drawable d = live.getConstantState() != null ? live.getConstantState().newDrawable().mutate() : live;
-        Rect saved = new Rect(d.getBounds());
-        Bitmap big = Bitmap.createBitmap(64, 36, Bitmap.Config.ARGB_8888);
-        Canvas c = new Canvas(big);
-        c.drawColor(Color.BLACK);
-        d.setBounds(0, 0, 64, 36);
-        d.draw(c);
-        d.setBounds(saved);
-        Bitmap small = Bitmap.createScaledBitmap(big, 16, 9, true);
-        big.recycle();
-        int[] px = new int[16 * 9];
-        small.getPixels(px, 0, 16, 0, 0, 16, 9);
-        blur(px, 16, 9);
-        blur(px, 16, 9);
-        float[] hsv = new float[3];
-        for (int i = 0; i < px.length; i++) {
-            Color.colorToHSV(px[i], hsv);
-            hsv[1] = Math.min(1f, hsv[1] * 1.25f);
-            hsv[2] = Math.min(hsv[2], 0.10f + 0.50f * hsv[1]);
-            px[i] = Color.HSVToColor(hsv);
-        }
-        small.setPixels(px, 0, 16, 0, 0, 16, 9);
-        return small;
-    }
-
-    /** 3x3 box blur, edges clamped. */
-    private static void blur(int[] px, int w, int h) {
-        int[] src = px.clone();
-        for (int y = 0; y < h; y++) {
-            for (int x = 0; x < w; x++) {
-                int r = 0, g = 0, b = 0;
-                for (int dy = -1; dy <= 1; dy++) {
-                    int yy = Math.max(0, Math.min(h - 1, y + dy));
-                    for (int dx = -1; dx <= 1; dx++) {
-                        int col = src[yy * w + Math.max(0, Math.min(w - 1, x + dx))];
-                        r += Color.red(col);
-                        g += Color.green(col);
-                        b += Color.blue(col);
-                    }
-                }
-                px[y * w + x] = Color.rgb(r / 9, g / 9, b / 9);
-            }
-        }
     }
 
     static final class Holder extends RecyclerView.ViewHolder {

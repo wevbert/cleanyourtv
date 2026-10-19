@@ -25,4 +25,25 @@
         <item name="android:clickable">true</item>
     </style>
     <style name="TopButton" parent="TopButtonBase" />
+
+    <!-- Icon button inside the time capsule; on focus it fills white and opens to show its label. -->
+    <style name="CapsuleButtonBase">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">36dp</item>
+        <item name="android:minWidth">36dp</item>
+        <item name="android:layout_marginStart">2dp</item>
+        <item name="android:paddingStart">8dp</item>
+        <item name="android:paddingEnd">8dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:background">@drawable/round_btn_bg</item>
+        <item name="android:textColor">@drawable/pill_text</item>
+        <item name="android:drawableTint">@drawable/pill_text</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:letterSpacing">0.0083</item>
+        <item name="android:fontFamily">@font/sf_pro</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:clickable">true</item>
+    </style>
+    <style name="CapsuleButton" parent="CapsuleButtonBase" />
 </resources>

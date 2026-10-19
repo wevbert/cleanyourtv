@@ -29,11 +29,15 @@ use.
 - The hardware is a Realtek RTD2875P with 1.8 GB RAM, of which about 700 MB is free while in use.
   No blur, no video backgrounds and no network polling. Animation must stay on cheap properties
   (transform and alpha).
-- Dock (top row, 5 across): Netflix, YouTube, Apple TV, DStv, Showmax, in that order. The TCL Live TV app (com.tcl.tv) is reached
+- Top row (6 across, in a glass band): Netflix, YouTube, Apple TV, DStv, Showmax, then the first app
+  alphabetically (Google Play Store). Sparkle TV and OnStream are disabled.
+- Top shelf: a full-bleed wallpaper (two built-in Unsplash aerials, one per day; see launcher/WALLPAPERS.md).
+  The TV holds no show data for a launcher to read (its TvProvider is empty with Google TV off), so no
+  live show art. Frame budget held: 12 ms median while moving focus (measured 19 Oct 2026). The TCL Live TV app (com.tcl.tv) is reached
   through Inputs, not as a tile. Utility apps that must keep running (Quick panel) are hidden but
   never disabled.
 - Packages that have been turned off are listed in backup/my-debloat.txt (local, not committed).
-- Features to keep: greeting, clock and date, Inputs / Wi-Fi / Settings pills, the Inputs dropdown
+- Features to keep: the time capsule top right holding Inputs, Wi-Fi and Settings, the Inputs dropdown
   with HDMI 1–3 and Live TV, the Clock screensaver, InputKeyService for the remote's Input key.
 - Apps opened from a tile are freed 20 s after Home returns. Android 12 only lets a launcher free
   cached apps, so the app you just left is freed on a later visit, once another app has opened.

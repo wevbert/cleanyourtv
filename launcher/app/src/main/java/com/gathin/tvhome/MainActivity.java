@@ -14,7 +14,6 @@ import android.content.pm.ApplicationInfo;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Rect;
-import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.media.AudioManager;
 import android.media.tv.TvContract;
@@ -82,16 +81,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private AppAdapter adapter;
     private RecyclerView grid;
     private FrameLayout root;
-    private View ambient;
-    private ImageView ambientArt;
-    private Bitmap ambientShown;
-    private TextView heroName;
-    private boolean heroShown;
-    private TextView greeting;
+    private View gridShade;
+    private ImageView wallView;
     private View btnInputs;
     private TextView btnWifi;
-    private TextView shamsiDate;
-    private boolean shamsi;
+    private TextView btnSettings;
+    /** What the Wi-Fi button says when it opens: the network name, or the connection type. */
+    private CharSequence wifiLabel = "";
     private String vpnApp;
     // Static so they survive the activity being destroyed while another app is open (low-memory TVs,
     // or Developer options → "Don't keep activities"); they only reset when the process dies.
@@ -166,8 +162,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private final Runnable minuteTick = new Runnable() {
         @Override
         public void run() {
-            updateGreeting();
-            updateWifiLabel();
+                updateWifiLabel();
             handler.postDelayed(this, MINUTE_MS);
         }
     };
@@ -208,20 +203,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
         root = findViewById(R.id.root);
         root.setBackgroundColor(cfg.backgroundColor);
+        // A theme's picture, or one of the two built-in aerials, a different one each day.
         if (cfg.wallpaper != null) showWallpaper(cfg.wallpaper);
-        ambient = findViewById(R.id.ambient);
-        ambientArt = findViewById(R.id.ambientArt);
-        heroName = findViewById(R.id.heroName);
-        greeting = findViewById(R.id.greeting);
+        else showBuiltInWallpaper();
+        gridShade = findViewById(R.id.gridShade);
         btnWifi = findViewById(R.id.btnWifi);
-        shamsiDate = findViewById(R.id.shamsiDate);
-        shamsi = cfg.shamsiDate;
-        if (shamsi) {
-            shamsiDate.setVisibility(View.VISIBLE);
-            TextView date = findViewById(R.id.date);
-            date.setTextSize(11f);
-            date.setPadding(0, (int) (4 * density), 0, 0);
-        }
         vpnApp = cfg.vpnApp;
         moduleCards = cfg.moduleCards;
         hiddenApps = new HashSet<>(cfg.hiddenApps);
@@ -234,17 +220,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         adapter = new AppAdapter(this, this, COLUMNS, cfg);
         grid.setAdapter(adapter);
 
-        // tvOS layout: push the dock row towards the bottom of the screen, leaving room for
-        // rows_below_dock grid rows under it; the rest of the grid stays below until you press Down.
-        int rowsBelowDock = cfg.rowsBelowDock;
+        // tvOS layout: the top row's icons centred at 79% of the screen height, so the glass band sits
+        // low over the picture and the next row just shows at the bottom edge.
         grid.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
             int h = b - t;
-            // Item height follows the tile size, which follows the column count (AppAdapter.tileWidthPx).
+            // Tile height follows the tile size, which follows the column count (AppAdapter.tileWidthPx).
             int inner = (r - l) - grid.getPaddingLeft() - grid.getPaddingRight();
-            int itemH = AppAdapter.itemHeightPx(AppAdapter.tileHeightPx(AppAdapter.tileWidthPx(inner, COLUMNS, density)), density);
-            int dockRow = itemH + (int) ((6 + 12) * density);   // item height plus DockDecoration offsets
-            int gridRows = itemH * rowsBelowDock;
-            int want = Math.max(0, h - dockRow - gridRows - (int) (30 * density));
+            int tileH = AppAdapter.tileHeightPx(AppAdapter.tileWidthPx(inner, COLUMNS, density));
+            // DockDecoration's 6dp top offset plus the item's own 8dp top padding sit above the tile.
+            int want = Math.max(0, (int) (h * 0.79f) - (int) (14 * density) - tileH / 2);
             if (grid.getPaddingTop() != want) {
                 grid.setPadding(grid.getPaddingLeft(), want, grid.getPaddingRight(), grid.getPaddingBottom());
             }
@@ -252,7 +236,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
 
         btnInputs = findViewById(R.id.btnInputs);
-        View btnSettings = findViewById(R.id.btnSettings);
+        btnSettings = findViewById(R.id.btnSettings);
+        // Icons only at rest; focused, a button fills white and opens to say what it is.
+        View.OnFocusChangeListener openOnFocus = (v, focused) -> showButtonLabel((TextView) v, focused);
+        btnInputs.setOnFocusChangeListener(openOnFocus);
+        btnWifi.setOnFocusChangeListener(openOnFocus);
+        btnSettings.setOnFocusChangeListener(openOnFocus);
         btnInputs.setOnClickListener(v -> showInputs());
         btnWifi.setOnClickListener(v -> openNetworkPill());
         btnWifi.setOnLongClickListener(v -> {
@@ -316,6 +305,44 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      * A theme's full-screen picture behind everything. Decoded once, downsampled to the screen so a 4K
      * JPEG costs a 1080p bitmap at most (about 8 MB), which is the price of a wallpaper on a 1 GB TV.
      */
+    private void showBuiltInWallpaper() {
+        int day = Calendar.getInstance().get(Calendar.DAY_OF_YEAR);
+        int res = day % 2 == 0 ? R.drawable.wall_napali : R.drawable.wall_seapoint;
+        try {
+            android.graphics.BitmapFactory.Options opts = new android.graphics.BitmapFactory.Options();
+            // Full colour: a 16-bit decode bands visibly in skies and sea. 1920x1080 is 8 MB, decoded once.
+            opts.inPreferredConfig = android.graphics.Bitmap.Config.ARGB_8888;
+            opts.inScaled = false;
+            opts.inMutable = true;
+            addWallpaper(android.graphics.BitmapFactory.decodeResource(getResources(), res, opts));
+        } catch (Exception | OutOfMemoryError e) {
+            // The black background stays.
+        }
+    }
+
+    /**
+     * Shows the picture with the shelf gradient painted into its pixels once, so each frame draws one
+     * opaque full-screen layer instead of the window background, the picture and a gradient on top.
+     */
+    private void addWallpaper(android.graphics.Bitmap bmp) {
+        if (bmp == null) return;
+        if (bmp.isMutable()) {
+            android.graphics.drawable.Drawable shade = getDrawable(R.drawable.shelf_scrim);
+            if (shade != null) {
+                shade.setBounds(0, 0, bmp.getWidth(), bmp.getHeight());
+                shade.draw(new android.graphics.Canvas(bmp));
+                findViewById(R.id.scrim).setVisibility(View.GONE);
+            }
+        }
+        // Nothing behind an opaque picture needs painting.
+        root.setBackground(null);
+        getWindow().setBackgroundDrawable(null);
+        wallView = new ImageView(this);
+        wallView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        wallView.setImageBitmap(bmp);
+        root.addView(wallView, 0, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    }
+
     private void showWallpaper(File file) {
         try {
             android.util.DisplayMetrics dm = getResources().getDisplayMetrics();
@@ -326,13 +353,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             while (opts.outWidth / (sample * 2) >= dm.widthPixels && opts.outHeight / (sample * 2) >= dm.heightPixels) sample *= 2;
             opts.inJustDecodeBounds = false;
             opts.inSampleSize = sample;
-            opts.inPreferredConfig = android.graphics.Bitmap.Config.RGB_565;   // no alpha needed, half the memory
-            android.graphics.Bitmap bmp = android.graphics.BitmapFactory.decodeFile(file.getPath(), opts);
-            if (bmp == null) return;
-            android.widget.ImageView wall = new android.widget.ImageView(this);
-            wall.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
-            wall.setImageBitmap(bmp);
-            root.addView(wall, 0, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            opts.inPreferredConfig = android.graphics.Bitmap.Config.ARGB_8888;   // 16-bit bands in skies
+            opts.inMutable = true;
+            addWallpaper(android.graphics.BitmapFactory.decodeFile(file.getPath(), opts));
         } catch (Exception | OutOfMemoryError e) {
             // A bad or huge picture must never take the home screen down; the plain colour stays.
         }
@@ -347,7 +370,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // removed, enabled or disabled meanwhile.
         if (appsDirty) reloadApps(true);
         else restoreFocus();
-        updateGreeting();
         updateWifiLabel();
         updateInputsButton();
         handler.postDelayed(minuteTick, MINUTE_MS);
@@ -372,7 +394,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             int pos = adapter.positionOf(returnKey);
             lastFocused = Math.max(0, Math.min(pos >= 0 ? pos : returnSlot, adapter.getItemCount() - 1));
             lastFocusedKey = adapter.keyAt(lastFocused);
-            if (pos < 0) hideHero();
             // A newly installed app may have brought a card with it.
             tilesReady = true;
             showCardPrompt();
@@ -460,9 +481,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             int decoratedTop = item.getTop() - (int) (6 * density);
             int dy = decoratedTop - grid.getPaddingTop();
             if (Math.abs(dy) > 1) grid.smoothScrollBy(0, dy);
-            showHero(position, r.top - dy);
+            setShelf(true);
         } else {
-            hideHero();
+            setShelf(false);
             // Scroll just enough so the whole lifted icon and its name are visible.
             Rect want = new Rect(0, -(int) pad * 2, item.getWidth(), item.getHeight() + (int) pad);
             grid.requestChildRectangleOnScreen(item, want, false);
@@ -471,55 +492,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     // ---- top shelf -------------------------------------------------------------------------------
 
-    private void showHero(int position, float dockTopInRoot) {
-        String label = adapter.labelAt(position);
-        Bitmap art = adapter.artAt(position);
-        float y = dockTopInRoot - 14 * density - 26 * density - heroName.getHeight();
-        boolean changed = !label.contentEquals(heroName.getText());
+    private boolean inShelf = true;
 
-        if (!heroShown) {
-            heroName.setText(label);
-            heroName.setY(y);
-            heroName.setTranslationX(0f);
-            heroName.animate().alpha(1f).setDuration(260).start();
-            setAmbient(art);
-            ambient.animate().alpha(1f).setDuration(500).withLayer().start();
-            heroShown = true;
-        } else if (changed) {
-            heroName.animate().alpha(0f).translationX(-12 * density).setDuration(120).withEndAction(() -> {
-                heroName.setText(label);
-                heroName.setY(y);
-                heroName.setTranslationX(12 * density);
-                heroName.animate().alpha(1f).translationX(0f).setDuration(200).start();
-            }).start();
-            if (art != ambientShown) {
-                ambient.animate().alpha(0.3f).setDuration(160).withLayer().withEndAction(() -> {
-                    setAmbient(art);
-                    ambient.animate().alpha(1f).setDuration(420).withLayer().start();
-                }).start();
-            }
-        } else {
-            heroName.setY(y);
-        }
-    }
-
-    /** The top shelf: the app's blurred art stretched over the screen, filtered so it reads as light, not pixels. */
-    private void setAmbient(Bitmap art) {
-        ambientShown = art;
-        if (art == null) {
-            ambientArt.setImageDrawable(null);
-            return;
-        }
-        BitmapDrawable d = new BitmapDrawable(getResources(), art);
-        d.setFilterBitmap(true);
-        ambientArt.setImageDrawable(d);
-    }
-
-    private void hideHero() {
-        if (!heroShown) return;
-        heroShown = false;
-        heroName.animate().alpha(0f).setDuration(160).start();
-        ambient.animate().alpha(0f).setDuration(300).withLayer().start();
+    /** On the top row the picture is whole; in the grid it sinks back so the icons carry the screen. */
+    private void setShelf(boolean shelf) {
+        if (shelf == inShelf) return;
+        inShelf = shelf;
+        float a = shelf ? 0f : 0.62f;
+        if (ValueAnimator.areAnimatorsEnabled()) gridShade.animate().alpha(a).setDuration(shelf ? 320 : 260).start();
+        else gridShade.setAlpha(a);
     }
 
     @Override
@@ -586,18 +567,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     // ---- top bar ---------------------------------------------------------------------------------
 
-    private void updateGreeting() {
-        int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
-        int res;
-        if (hour < 5) res = R.string.good_night;
-        else if (hour < 12) res = R.string.good_morning;
-        else if (hour < 17) res = R.string.good_afternoon;
-        else if (hour < 22) res = R.string.good_evening;
-        else res = R.string.good_night;
-        greeting.setText(res);
-        if (shamsi) shamsiDate.setText(Shamsi.today());
-    }
-
     /** Shows the Wi-Fi network name on the button when we can read it, otherwise the connection type. */
     private void updateWifiLabel() {
         String text = getString(R.string.wifi);
@@ -646,16 +615,25 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // a long network name, so shorten the name to whatever room the badge leaves. The total paddings
             // include the Wi-Fi icon.
             TextPaint paint = btnWifi.getPaint();
-            float room = btnWifi.getMaxWidth() - btnWifi.getTotalPaddingStart() - btnWifi.getTotalPaddingEnd()
+            float room = btnWifi.getMaxWidth() - 50 * density
                     - span.getSize(paint, badge, 0, badge.length(), null) - paint.measureText(" ") - 2 * density;
             text = TextUtils.ellipsize(text, paint, Math.max(0, room), TextUtils.TruncateAt.END).toString();
             SpannableString label = new SpannableString(text + " " + badge);
             label.setSpan(span, text.length() + 1, label.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            btnWifi.setText(label);
+            wifiLabel = label;
         } else {
-            btnWifi.setText(text);
+            wifiLabel = text;
         }
+        btnWifi.setContentDescription(text);
+        if (btnWifi.isFocused()) btnWifi.setText(wifiLabel);
         btnWifi.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, 0, 0, 0);
+    }
+
+    private void showButtonLabel(TextView b, boolean open) {
+        CharSequence label = b == btnWifi ? wifiLabel : b == btnInputs ? getString(R.string.inputs) : getString(R.string.settings);
+        b.setText(open ? label : "");
+        b.setCompoundDrawablePadding(open ? (int) (7 * density) : 0);
+        b.setPaddingRelative(b.getPaddingStart(), b.getPaddingTop(), (int) ((open ? 14 : 8) * density), b.getPaddingBottom());
     }
 
     /** The network pill opens the VPN app when one is configured and installed, otherwise Wi-Fi settings. */

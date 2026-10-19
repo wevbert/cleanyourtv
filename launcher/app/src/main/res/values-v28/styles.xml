@@ -4,4 +4,8 @@
     <style name="TopButton" parent="TopButtonBase">
         <item name="android:fontVariationSettings">\'wght\' 500</item>
     </style>
+    <!-- SF Pro Text at its own optical size (13sp is 26pt on this 1080p TV), semibold, as tvOS sets it. -->
+    <style name="CapsuleButton" parent="CapsuleButtonBase">
+        <item name="android:fontVariationSettings">\'wght\' 590, \'opsz\' 26</item>
+    </style>
 </resources>

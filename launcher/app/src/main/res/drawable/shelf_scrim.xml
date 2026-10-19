@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Top shelf: the art holds the upper screen and falls to black behind the top row. -->
+<!-- Keeps the picture whole above and settles it to near black under the dock, as tvOS does. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
     <gradient android:angle="270"
-        android:startColor="#33000000"
-        android:centerColor="#59000000"
-        android:centerY="0.5"
-        android:endColor="#F2000000" />
+        android:startColor="#26000000"
+        android:centerColor="#14000000"
+        android:centerY="0.45"
+        android:endColor="#D9000000" />
 </shape>
