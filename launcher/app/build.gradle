@@ -42,6 +42,12 @@ android {
         }
     }
 
+    // Fonts stored uncompressed: Android then maps SF Pro (21 MB) straight from the APK instead of
+    // unpacking it into native memory, and Fonts can open it by file descriptor.
+    androidResources {
+        noCompress 'ttf'
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17

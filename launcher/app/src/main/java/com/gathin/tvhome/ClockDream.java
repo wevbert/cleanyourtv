@@ -2,10 +2,12 @@ package com.gathin.tvhome;
 
 import android.animation.ValueAnimator;
 import android.graphics.Bitmap;
+import android.graphics.Typeface;
 import android.os.Handler;
 import android.os.Looper;
 import android.service.dreams.DreamService;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -75,6 +77,12 @@ public class ClockDream extends DreamService {
         wxIcon = findViewById(R.id.dreamWxIcon);
         wxText = findViewById(R.id.dreamWxText);
         textBlock = findViewById(R.id.dreamText);
+        // Cached SF Pro faces: a layout's fontVariationSettings would build new native ones every run.
+        Typeface semibold = Fonts.sf(this, "'wght' 600, 'opsz' 28"), medium = Fonts.sf(this, "'wght' 500, 'opsz' 28");
+        ((TextView) findViewById(R.id.dreamClock)).setTypeface(semibold);
+        greeting.setTypeface(semibold);
+        wxText.setTypeface(medium);
+        place.setTypeface(medium);
     }
 
     @Override
@@ -103,6 +111,14 @@ public class ClockDream extends DreamService {
     @Override
     public void onDetachedFromWindow() {
         stop();
+        // Android 12 keeps each finished screensaver's hidden activity alive. Empty this one so a leftover
+        // holds no views, fonts or photo: without this every run kept about 3.6 MB until the process died.
+        ViewGroup root = front != null ? (ViewGroup) front.getParent() : null;
+        if (root != null) root.removeAllViews();
+        front = back = null;
+        greeting = place = wxText = null;
+        weatherRow = textBlock = null;
+        wxIcon = null;
         super.onDetachedFromWindow();
     }
 
@@ -110,6 +126,7 @@ public class ClockDream extends DreamService {
         drifting = false;
         handler.removeCallbacks(nextPhoto);
         handler.removeCallbacks(minute);
+        if (front == null) return;   // already emptied
         front.animate().cancel();
         back.animate().cancel();
         front.setImageDrawable(null);

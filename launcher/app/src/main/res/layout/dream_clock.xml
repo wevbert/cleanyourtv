@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Screensaver (ClockDream), tvOS aerial style: an aerial drifting slowly, the time top right, the place
+<!-- Screensaver (ClockDream), tvOS aerial style (SF Pro faces are set in code, from Fonts): an aerial drifting slowly, the time top right, the place
      bottom right, and the greeting and weather bottom left. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -33,8 +33,6 @@
         android:textColor="#FFFFFFFF"
         android:textSize="28sp"
         android:letterSpacing="0.0137"
-        android:fontFamily="@font/sf_pro"
-        android:fontVariationSettings="'wght' 600, 'opsz' 28"
         android:fontFeatureSettings="tnum"
         android:shadowColor="#80000000"
         android:shadowDy="2"
@@ -57,8 +55,6 @@
             android:textColor="#FFFFFFFF"
             android:textSize="30sp"
             android:letterSpacing="0.0044"
-            android:fontFamily="@font/sf_pro"
-            android:fontVariationSettings="'wght' 600, 'opsz' 28"
             android:shadowColor="#80000000"
             android:shadowDy="2"
             android:shadowRadius="14"
@@ -88,8 +84,6 @@
                 android:textColor="#F2FFFFFF"
                 android:textSize="17sp"
                 android:letterSpacing="0.0115"
-                android:fontFamily="@font/sf_pro"
-                android:fontVariationSettings="'wght' 500, 'opsz' 28"
                 android:shadowColor="#80000000"
                 android:shadowDy="1"
                 android:shadowRadius="10" />
@@ -107,8 +101,6 @@
         android:textColor="#CCFFFFFF"
         android:textSize="14sp"
         android:letterSpacing="0.0137"
-        android:fontFamily="@font/sf_pro"
-        android:fontVariationSettings="'wght' 500, 'opsz' 28"
         android:shadowColor="#80000000"
         android:shadowDy="1"
         android:shadowRadius="10" />

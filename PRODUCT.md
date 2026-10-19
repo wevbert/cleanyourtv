@@ -46,7 +46,10 @@ use.
 - Inputs: an awake CEC device's announced name replaces "HDMI n" on its row.
 - Screensaver (ClockDream): tvOS-style aerials with slow pan and zoom, 3-minute crossfades, greeting,
   weather, time and place. Today's photo is shared with Home; the other is freed when it ends (+10 MB
-  while running, measured).
+  while running). SF Pro faces come from Fonts (one per weight per process) and the font is stored
+  uncompressed: layout fontVariationSettings leaked ~3 MB of native typefaces per screensaver run, and
+  Android 12 keeps finished screensaver activities, so ClockDream empties itself on detach. Measured
+  19 Oct 2026: Home 58 MB, 67 MB after the first screensaver run, then flat.
 - Features to keep: the time capsule top right holding Inputs, Wi-Fi and Settings, the Inputs dropdown
   with HDMI 1–3 and Live TV, the Clock screensaver, InputKeyService for the remote's Input key.
 - Freeing other apps from the launcher does not work on this firmware: TCL ignores an app's
