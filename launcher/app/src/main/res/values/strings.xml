@@ -46,7 +46,7 @@
     <string name="card_state_new">New</string>
     <string name="card_state_new_key">New key</string>
     <string name="card_state_new_label">New name</string>
-    <string name="welcome">Welcome, %1$s</string>
+    <string name="greeting_name">%1$s, %2$s</string>
     <string name="wx_clear">Clear</string>
     <string name="wx_mostly_clear">Mostly clear</string>
     <string name="wx_partly_cloudy">Partly cloudy</string>

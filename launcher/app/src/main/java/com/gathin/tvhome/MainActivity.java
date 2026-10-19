@@ -78,6 +78,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private FrameLayout root;
     private View gridShade;
     private Weather weather;
+    private TextView welcome;
+    private String ownerName;
     private View weatherRow;
     private ImageView wxIcon;
     private TextView wxTemp, wxText;
@@ -160,6 +162,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         @Override
         public void run() {
             updateWifiLabel();
+            updateGreeting();
             if (weather != null) weather.refreshIfDue(MainActivity.this::showWeather);
             handler.postDelayed(this, MINUTE_MS);
         }
@@ -186,9 +189,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         else showBuiltInWallpaper();
         gridShade = findViewById(R.id.gridShade);
         String owner = getString(R.string.owner_name).trim();
-        TextView welcome = findViewById(R.id.welcome);
+        ownerName = owner;
+        welcome = findViewById(R.id.welcome);
         if (owner.isEmpty()) welcome.setVisibility(View.GONE);
-        else welcome.setText(getString(R.string.welcome, owner));
         weatherRow = findViewById(R.id.weatherRow);
         wxIcon = findViewById(R.id.wxIcon);
         wxTemp = findViewById(R.id.wxTemp);
@@ -363,10 +366,20 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         updateWifiLabel();
         updateInputsButton();
         handler.postDelayed(minuteTick, MINUTE_MS);
+        updateGreeting();
         if (weather != null) {
             showWeather(weather.cached());
             weather.refreshIfDue(this::showWeather);
         }
+    }
+
+    /** "Good morning, Wevs", by the hour. Late at night it stays "Good evening": "Good night" is a goodbye. */
+    private void updateGreeting() {
+        if (ownerName.isEmpty()) return;
+        int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+        int part = hour >= 5 && hour < 12 ? R.string.good_morning
+                : hour >= 12 && hour < 17 ? R.string.good_afternoon : R.string.good_evening;
+        welcome.setText(getString(R.string.greeting_name, getString(part), ownerName));
     }
 
     /** The weather line under the greeting: icon, temperature, conditions and today's range. */

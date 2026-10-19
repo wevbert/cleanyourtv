@@ -66,7 +66,7 @@
          label, caption and glow colour, once you answer Show on the prompt. false: never look for cards or ask. -->
     <bool name="module_cards">true</bool>
 
-    <!-- Greeting top left on Home: "Welcome, <name>". Empty: no greeting. -->
+    <!-- Greeting top left on Home: "Good morning, <name>" by the time of day. Empty: no greeting. -->
     <string name="owner_name" translatable="false">Wevs</string>
 
     <!-- Weather under the greeting, from Open-Meteo (free, no key). Empty place: no weather.

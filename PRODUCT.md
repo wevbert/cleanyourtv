@@ -37,7 +37,7 @@ use.
   through Inputs, not as a tile. Utility apps that must keep running (Quick panel) are hidden but
   never disabled.
 - Packages that have been turned off are listed in backup/my-debloat.txt (local, not committed).
-- Top left: "Welcome, Wevs" (config owner_name) and Accra weather in °C from Open-Meteo (no key; one
+- Top left: a time-of-day greeting, "Good afternoon, Wevs" (config owner_name) and Accra weather in °C from Open-Meteo (no key; one
   request per 30 min, cached; config weather_*). TCL HOME (com.tcl.dashboard) is disabled.
 - Features to keep: the time capsule top right holding Inputs, Wi-Fi and Settings, the Inputs dropdown
   with HDMI 1–3 and Live TV, the Clock screensaver, InputKeyService for the remote's Input key.
