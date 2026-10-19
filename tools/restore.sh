@@ -22,5 +22,6 @@ export MSYS_NO_PATHCONV=1
   # nothing was set, and harmless errors on Android 9, which has no device_config.
   echo "device_config delete activity_manager max_cached_processes 2>/dev/null; echo cap-cleared"
   echo "device_config set_sync_disabled_for_tests none 2>/dev/null; echo flag-sync-restored"
+  echo "settings delete global ota_disable_automatic_update; settings put system tcl_app_autoupdate 1 2>/dev/null; echo auto-updates-restored"
   echo "pm list packages -d"
 } | "$PY" -I tools/tv.py --batch

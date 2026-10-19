@@ -27,6 +27,7 @@ $cmds = @($pkgs | ForEach-Object { "pm enable $_" }) + @(
     # Background-app cap and the feature-flag sync lock; no-ops where nothing was set.
     'device_config delete activity_manager max_cached_processes 2>/dev/null; echo cap-cleared',
     'device_config set_sync_disabled_for_tests none 2>/dev/null; echo flag-sync-restored',
+    'settings delete global ota_disable_automatic_update; settings put system tcl_app_autoupdate 1 2>/dev/null; echo auto-updates-restored',
     'pm list packages -d'
 )
 $cmds | & $py -I (Join-Path $repo 'tools\tv.py') --batch
