@@ -11,9 +11,9 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 
 /**
- * The console tile's face: PlayStation blue, "PS5" in SF Pro and a small status pill ("On" in green,
- * "Standby" in grey). Drawn once per state into a 400x240 bitmap (a tvOS icon's 5:3), so the tile costs
- * what any app banner costs. No Sony artwork is copied.
+ * The console tile's face: PlayStation blue, the PlayStation symbol (res/drawable/console_symbol.xml, from
+ * Wikimedia Commons, public domain) and a status pill ("On" in green, "Standby" in grey). Drawn once per state into a 400x240 bitmap (a tvOS icon's 5:3), so the tile costs
+ * what any app banner costs.
  */
 final class ConsoleArt {
 
@@ -31,14 +31,22 @@ final class ConsoleArt {
         Paint bg = new Paint(Paint.ANTI_ALIAS_FLAG);
         bg.setShader(new LinearGradient(0, 0, W, H, 0xFF0046C8, 0xFF00256E, Shader.TileMode.CLAMP));
         c.drawRect(0, 0, W, H, bg);
-        Paint t = new Paint(Paint.ANTI_ALIAS_FLAG);
-        t.setColor(0xFFFFFFFF);
-        t.setTypeface(Fonts.sf(ctx, "'wght' 700, 'opsz' 28"));
-        t.setTextSize(92);
-        t.setLetterSpacing(0.02f);
-        t.setTextAlign(Paint.Align.CENTER);
-        Paint.FontMetrics fm = t.getFontMetrics();
-        c.drawText(shortName, W / 2f, H / 2f - (fm.ascent + fm.descent) / 2f - 10, t);
+        // The PlayStation symbol (res/drawable/console_symbol.xml), white, centred above the pill.
+        Drawable symbol = ctx.getDrawable(R.drawable.console_symbol);
+        if (symbol != null) {
+            int sw = 150, sh = Math.round(sw * 154.81912f / 200f);
+            int left = (W - sw) / 2, top = (H - 62 - sh) / 2 + 6;
+            symbol.setBounds(left, top, left + sw, top + sh);
+            symbol.draw(c);
+        } else {
+            Paint t = new Paint(Paint.ANTI_ALIAS_FLAG);
+            t.setColor(0xFFFFFFFF);
+            t.setTypeface(Fonts.sf(ctx, "'wght' 700, 'opsz' 28"));
+            t.setTextSize(92);
+            t.setTextAlign(Paint.Align.CENTER);
+            Paint.FontMetrics fm = t.getFontMetrics();
+            c.drawText(shortName, W / 2f, H / 2f - (fm.ascent + fm.descent) / 2f - 10, t);
+        }
         // Status pill, bottom centre.
         String label = ctx.getString(isOn ? R.string.console_on : R.string.console_standby);
         Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
