@@ -83,6 +83,86 @@ final class DataUsage {
         }
     }
 
+    private static long startOfToday() {
+        Calendar c = Calendar.getInstance();
+        c.set(Calendar.HOUR_OF_DAY, 0);
+        c.set(Calendar.MINUTE, 0);
+        c.set(Calendar.SECOND, 0);
+        c.set(Calendar.MILLISECOND, 0);
+        return c.getTimeInMillis();
+    }
+
+    /** Wi-Fi data this month, for the line on Home; -1 without access. One cheap device query. */
+    static long month(Context ctx) {
+        if (!hasAccess(ctx)) return -1;
+        NetworkStatsManager nsm = ctx.getSystemService(NetworkStatsManager.class);
+        if (nsm == null) return -1;
+        Calendar m = Calendar.getInstance();
+        m.setTimeInMillis(startOfToday());
+        m.set(Calendar.DAY_OF_MONTH, 1);
+        try {
+            return device(nsm, m.getTimeInMillis(), System.currentTimeMillis());
+        } catch (Exception e) {
+            return -1;
+        }
+    }
+
+    /** The last 7 days (oldest first): each day's total and the share of the week's top app. */
+    static final class Week {
+        final long[] total = new long[7], top = new long[7];
+        final long[] start = new long[7];
+        String topLabel;
+    }
+
+    static Week week(Context ctx) {
+        if (!hasAccess(ctx)) return null;
+        NetworkStatsManager nsm = ctx.getSystemService(NetworkStatsManager.class);
+        if (nsm == null) return null;
+        Week w = new Week();
+        long today = startOfToday(), now = System.currentTimeMillis();
+        List<Map<Integer, Long>> days = new ArrayList<>();
+        Map<Integer, Long> sum = new HashMap<>();
+        try {
+            for (int d = 0; d < 7; d++) {
+                Calendar c = Calendar.getInstance();
+                c.setTimeInMillis(today);
+                c.add(Calendar.DAY_OF_MONTH, d - 6);
+                long s = c.getTimeInMillis();
+                c.add(Calendar.DAY_OF_MONTH, 1);
+                long e = Math.min(c.getTimeInMillis(), now);
+                w.start[d] = s;
+                Map<Integer, Long> byUid = new HashMap<>();
+                try (NetworkStats stats = nsm.querySummary(ConnectivityManager.TYPE_WIFI, null, s, e)) {
+                    NetworkStats.Bucket b = new NetworkStats.Bucket();
+                    while (stats.hasNextBucket()) {
+                        stats.getNextBucket(b);
+                        long n = b.getRxBytes() + b.getTxBytes();
+                        byUid.merge(b.getUid(), n, Long::sum);
+                        sum.merge(b.getUid(), n, Long::sum);
+                        w.total[d] += n;
+                    }
+                }
+                days.add(byUid);
+            }
+        } catch (Exception e) {
+            return null;
+        }
+        int topUid = -1;
+        long best = 0;
+        for (Map.Entry<Integer, Long> e : sum.entrySet()) {
+            if (e.getKey() >= Process.FIRST_APPLICATION_UID && e.getValue() > best) {
+                best = e.getValue();
+                topUid = e.getKey();
+            }
+        }
+        if (topUid >= 0) {
+            String[] pkgs = ctx.getPackageManager().getPackagesForUid(topUid);
+            w.topLabel = pkgs != null && pkgs.length > 0 ? look(ctx.getPackageManager(), pkgs[0]).label : null;
+            for (int d = 0; d < 7; d++) w.top[d] = days.get(d).getOrDefault(topUid, 0L);
+        }
+        return w;
+    }
+
     private static long device(NetworkStatsManager nsm, long start, long end) throws Exception {
         NetworkStats.Bucket b = nsm.querySummaryForDevice(ConnectivityManager.TYPE_WIFI, null, start, end);
         return b == null ? 0 : b.getRxBytes() + b.getTxBytes();

@@ -17,17 +17,21 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
- * Netflix speed limiter: a VPN that only Netflix's traffic enters and that never leaves the TV.
- * hev-socks5-tunnel (src/main/jni) turns its packets into SOCKS5 connections to Socks5Proxy, which makes
- * the real connections and paces downloads. At 8 Mbps Netflix settles on its top 1080p streams by itself (at 6 it chose 720p).
+ * Streaming speed limiter: a VPN that only the capped apps' traffic enters (Netflix, Apple TV, Showmax,
+ * DStv) and that never leaves the TV. hev-socks5-tunnel (src/main/jni) turns its packets into SOCKS5
+ * connections to Socks5Proxy, which makes the real connections and paces downloads. At 8 Mbps Netflix
+ * settles on its top 1080p streams by itself (at 6 it chose 720p).
  *
- * Fail-open: if this service stops, Android takes the VPN down and Netflix goes back to plain Wi-Fi,
+ * Fail-open: if this service stops, Android takes the VPN down and the apps go back to plain Wi-Fi,
  * uncapped, rather than losing its connection. Started by Android as the always-on VPN, so it is up
  * after a restart; pre-approved over ADB (appops ACTIVATE_VPN), so no consent dialog.
  */
 public class LimiterVpn extends VpnService {
 
     static final String NETFLIX = "com.netflix.ninja";
+    /** The streaming apps that pass through the cap. They share it; only one plays at a time. */
+    static final String[] CAPPED = {NETFLIX, "com.apple.atve.androidtv.appletv",
+            "com.showmax.showmax.google", "com.dstvmobile.android"};
     static final int DEFAULT_MBPS = 8;
     private static final String TAG = "TvHome";
 
@@ -87,17 +91,25 @@ public class LimiterVpn extends VpnService {
             Socks5Proxy p = new Socks5Proxy(realDns());
             p.bucket.setRate(capMbps(this) * 125_000L);
             int port = p.start();
-            // Netflix only; addresses from the benchmark range hev documents. 198.18.0.2 is the DNS
-            // address Netflix is given: its queries are relayed to the Wi-Fi network's real resolver.
-            tun = new Builder()
+            // The capped apps only; addresses from the benchmark range hev documents. 198.18.0.2 is the
+            // DNS address they are given: their queries are relayed to the Wi-Fi network's real resolver.
+            Builder b = new Builder()
                     .setSession(getString(R.string.limiter_session))
                     .addAddress("198.18.0.1", 32)
                     .addRoute("0.0.0.0", 0)
                     .addDnsServer("198.18.0.2")
                     .setMtu(8500)
-                    .setBlocking(false)
-                    .addAllowedApplication(NETFLIX)
-                    .establish();
+                    .setBlocking(false);
+            int apps = 0;
+            for (String pkg : CAPPED) {
+                try {
+                    b.addAllowedApplication(pkg);
+                    apps++;
+                } catch (android.content.pm.PackageManager.NameNotFoundException ignored) {
+                    // Not installed (or disabled): nothing to cap.
+                }
+            }
+            tun = apps == 0 ? null : b.establish();
             if (tun == null) {   // not approved
                 p.stop();
                 stopSelf();
@@ -114,7 +126,7 @@ public class LimiterVpn extends VpnService {
                 throw new IllegalStateException("tunnel did not start");
             }
             proxy = p;
-            Log.i(TAG, "limiter up, cap " + capMbps(this) + " Mbps, proxy port " + port);
+            Log.i(TAG, "limiter up for " + apps + " apps, cap " + capMbps(this) + " Mbps, proxy port " + port);
         } catch (Throwable t) {
             // Fail open: no VPN means Netflix simply uses Wi-Fi.
             Log.w(TAG, "limiter failed to start", t);

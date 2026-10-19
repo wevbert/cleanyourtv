@@ -27,8 +27,17 @@ final class VpnBadge extends ReplacementSpan {
 
     /** @param lock the lock icon for the "up" badge, or null for the red "off" badge */
     VpnBadge(Drawable lock, float density) {
-        this.fill = lock != null ? GREEN : RED;
-        this.ink = lock != null ? INK : INK_OFF;
+        this(lock, lock != null, density);
+    }
+
+    /** A badge without the lock: green or red by state (the streaming cap's "Cap" / "Cap off"). */
+    VpnBadge(boolean green, float density) {
+        this(null, green, density);
+    }
+
+    private VpnBadge(Drawable lock, boolean green, float density) {
+        this.fill = green ? GREEN : RED;
+        this.ink = green ? INK : INK_OFF;
         this.lock = lock != null ? lock.mutate() : null;
         if (this.lock != null) this.lock.setTint(ink);
         this.density = density;

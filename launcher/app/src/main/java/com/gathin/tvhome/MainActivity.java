@@ -165,6 +165,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         public void run() {
             updateWifiLabel();
             updateGreeting();
+            updateDataLine();
             if (weather != null) weather.refreshIfDue(MainActivity.this::showWeather);
             handler.postDelayed(this, MINUTE_MS);
         }
@@ -201,6 +202,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         wxText = findViewById(R.id.wxText);
         wxNote = findViewById(R.id.wxNote);
         flagLine = findViewById(R.id.flagLine);
+        dataLine = findViewById(R.id.dataLine);
         if (!getString(R.string.weather_place).trim().isEmpty()) {
             weather = new Weather(this, getString(R.string.weather_latitude).trim(),
                     getString(R.string.weather_longitude).trim(), getString(R.string.weather_unit).trim());
@@ -357,6 +359,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         updateInputsButton();
         handler.postDelayed(minuteTick, MINUTE_MS);
         updateGreeting();
+        updateDataLine();
         if (weather != null) {
             showWeather(weather.cached());
             weather.refreshIfDue(this::showWeather);
@@ -628,10 +631,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         // With a VPN app configured, a VPN that is down matters too: show a red "VPN off" capsule then.
         boolean vpnDown = !vpn && online && !vpnApp.isEmpty();
-        if (vpn || vpnDown) {
+        // Otherwise the badge is the streaming cap's: green "Cap" while the limiter runs with the cap on,
+        // red "Cap off" when it is switched off or not running. Two field reads, no polling.
+        boolean cap = !vpn && !vpnDown && online;
+        boolean capOn = LimiterVpn.running() && LimiterVpn.capMbps(this) > 0;
+        if (vpn || vpnDown || cap) {
             // Network name, then the green lock-and-VPN (or red "VPN off") capsule drawn in place of the word.
-            String badge = getString(vpn ? R.string.vpn : R.string.vpn_off);
-            VpnBadge span = new VpnBadge(vpn ? getDrawable(R.drawable.ic_lock) : null, density);
+            String badge = getString(vpn ? R.string.vpn : vpnDown ? R.string.vpn_off
+                    : capOn ? R.string.cap_badge : R.string.cap_badge_off);
+            VpnBadge span = cap ? new VpnBadge(capOn, density)
+                    : new VpnBadge(vpn ? getDrawable(R.drawable.ic_lock) : null, density);
             // The pill has a maximum width and ellipsizes at the end, which would cut the badge off after
             // a long network name, so shorten the name to whatever room the badge leaves. The total paddings
             // include the Wi-Fi icon.
@@ -669,6 +678,27 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     private TextView limiterTitle;
+    private WeekBars weekBars;
+    private TextView dataLine;
+    private long dataLineAt;
+
+    /** "5.3 GB used this month" under the weather: one device query, in the background, every 10 minutes at most. */
+    private void updateDataLine() {
+        if (dataLine == null || System.currentTimeMillis() - dataLineAt < 10 * MINUTE_MS) return;
+        dataLineAt = System.currentTimeMillis();
+        final android.content.Context app = getApplicationContext();
+        new Thread(() -> {
+            long m = DataUsage.month(app);
+            handler.post(() -> {
+                if (m < 0) {
+                    dataLine.setVisibility(View.GONE);
+                    return;
+                }
+                dataLine.setText(getString(R.string.data_month_line, DataUsage.format(m)));
+                dataLine.setVisibility(View.VISIBLE);
+            });
+        }, "data-line").start();
+    }
 
     private void updateLimiterRow() {
         if (limiterTitle == null) return;
@@ -699,6 +729,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         final android.content.Context app = getApplicationContext();
         new Thread(() -> {
             DataUsage d = DataUsage.read(app, dataRows.length);
+            DataUsage.Week wk = d == null ? null : DataUsage.week(app);
             handler.post(() -> {
                 if (token != dataToken || !dataPopup.isShowing()) return;
                 if (d == null) {
@@ -706,6 +737,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                     dataNote.setVisibility(View.VISIBLE);
                     return;
                 }
+                weekBars.setWeek(wk);
                 dataValues[0].setText(DataUsage.format(d.today));
                 dataValues[1].setText(DataUsage.format(d.week));
                 dataValues[2].setText(DataUsage.format(d.month));
@@ -740,6 +772,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             label.setText(labels[i]);
             totals.addView(t);
         }
+        weekBars = dataPanel.findViewById(R.id.weekBars);
+        weekBars.setTypeface(medium);
         LinearLayout apps = dataPanel.findViewById(R.id.dataApps);
         for (int i = 0; i < dataRows.length; i++) {
             View r = getLayoutInflater().inflate(R.layout.item_data_app, apps, false);
@@ -756,6 +790,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             LimiterVpn.setOn(this, LimiterVpn.capMbps(this) == 0);
             startLimiter();
             updateLimiterRow();
+            updateWifiLabel();
         });
         addInputRow(rows, dataPopup, R.drawable.ic_wifi, getString(R.string.wifi_settings), -1, this::openNetworkPill);
     }

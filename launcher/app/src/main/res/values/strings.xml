@@ -87,7 +87,11 @@
     <string name="data_system">Android system</string>
     <string name="data_no_access">Data usage needs usage access for the launcher</string>
     <string name="wifi_settings">Wi-Fi settings</string>
-    <string name="limiter_session">Netflix 1080p cap</string>
-    <string name="limiter_on">Netflix 1080p cap: on</string>
-    <string name="limiter_off">Netflix 1080p cap: off</string>
+    <string name="limiter_session">1080p streaming cap</string>
+    <string name="limiter_on">1080p streaming cap: on</string>
+    <string name="limiter_off">1080p streaming cap: off</string>
+    <string name="cap_badge">Cap</string>
+    <string name="cap_badge_off">Cap off</string>
+    <string name="data_month_line">%1$s used this month</string>
+    <string name="data_everything_else">Everything else</string>
 </resources>

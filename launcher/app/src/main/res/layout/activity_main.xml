@@ -139,6 +139,24 @@
             android:shadowDy="1"
             android:shadowRadius="10"
             android:visibility="gone" />
+
+        <!-- Wi-Fi data used this month, read in the background when Home opens. -->
+        <TextView
+            android:id="@+id/dataLine"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:singleLine="true"
+            android:textColor="#B3FFFFFF"
+            android:textSize="14sp"
+            android:letterSpacing="0.0137"
+            android:fontFamily="@font/sf_pro"
+            android:fontVariationSettings="'wght' 500, 'opsz' 28"
+            android:fontFeatureSettings="tnum"
+            android:shadowColor="#73000000"
+            android:shadowDy="1"
+            android:shadowRadius="10"
+            android:visibility="gone" />
     </LinearLayout>
 
     <LinearLayout
