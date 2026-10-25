@@ -12,9 +12,10 @@
         <item>com.netflix.ninja</item>
         <item>com.google.android.youtube.tv</item>
         <item>com.apple.atve.androidtv.appletv</item>
-        <item>com.dstvmobile.android</item>
+        <!-- The DStv decoder on HDMI 3 (input_tiles below); the DStv app moves to the grid. -->
+        <item>decoder</item>
         <item>com.showmax.showmax.google</item>
-        <!-- The console tile (console_input below). -->
+        <!-- The PS5 on HDMI 2 (input_tiles below). -->
         <item>console</item>
     </string-array>
 
@@ -80,7 +81,11 @@
     <string name="weather_longitude" translatable="false">-0.1870</string>
     <string name="weather_unit" translatable="false">celsius</string>
 
-    <!-- Console tile: the HDMI input it switches to (TvInputInfo id; HW16 is HDMI 2 here). Empty: no tile.
-         Its name and On/Standby come from the CEC device the TV sees on that port. -->
-    <string name="console_input" translatable="false">com.tcl.tvinput/.TvPassThroughService/HW16</string>
+    <!-- HDMI input tiles: "key|TvInputInfo id|style", placed by key in dock_apps. Style "playstation" draws the
+         PlayStation face with On/Standby from the CEC device on that port; "app:<package>" uses that app's
+         banner with the port's name (HW15/16/17 are HDMI 1/2/3 here). -->
+    <string-array name="input_tiles" translatable="false">
+        <item>console|com.tcl.tvinput/.TvPassThroughService/HW16|playstation</item>
+        <item>decoder|com.tcl.tvinput/.TvPassThroughService/HW17|app:com.dstvmobile.android</item>
+    </string-array>
 </resources>

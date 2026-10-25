@@ -131,19 +131,19 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         @Override
         public void onInputAdded(String inputId) {
             updateInputsButton();
-            if (adapter != null) adapter.refreshConsole();   // the console's CEC device appearing
+            if (adapter != null) adapter.refreshInputs();   // the console's CEC device appearing
         }
 
         @Override
         public void onInputRemoved(String inputId) {
             updateInputsButton();
-            if (adapter != null) adapter.refreshConsole();
+            if (adapter != null) adapter.refreshInputs();
         }
 
         @Override
         public void onInputStateChanged(String inputId, int state) {
             // The console waking or going to standby: only its own tile redraws.
-            if (adapter != null) adapter.refreshConsole();
+            if (adapter != null) adapter.refreshInputs();
         }
     };
 

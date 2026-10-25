@@ -175,10 +175,9 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             if (ca != cb) return ca ? -1 : 1;
             return a.label.compareToIgnoreCase(b.label);
         });
-        // The console's tile (config console_input): sorted by its "console" entry in dock_apps.
-        Entry console = consoleEntry();
-        if (console != null) {
-            int at = favourites.indexOf(CONSOLE_KEY);
+        // HDMI input tiles (config input_tiles), each placed by its key in dock_apps.
+        for (Entry input : inputEntries()) {
+            int at = favourites.indexOf(input.pkg);
             int pos = 0;
             if (at >= 0) {
                 while (pos < fresh.size() && favourites.indexOf(fresh.get(pos).pkg) >= 0
@@ -186,7 +185,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             } else {
                 pos = fresh.size();
             }
-            fresh.add(pos, console);
+            fresh.add(pos, input);
         }
         // Optional "Default home" tile (config.xml), only when this TV actually has a home-screen picker.
         if (showHomeSettings
@@ -200,46 +199,63 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         notifyDataSetChanged();
     }
 
-    /** dock_apps entry that places the console tile. */
-    static final String CONSOLE_KEY = "console";
-
     /**
-     * The console on the configured HDMI port: named after the CEC device the TV sees there ("PlayStation 5")
-     * and "On" while that device reports itself awake. Null when no port is configured or it is gone.
+     * Tiles that switch to an HDMI input (config input_tiles, "key|input id|style"). Style "playstation" draws
+     * the PlayStation face with On/Standby from the CEC device on that port; "app:<package>" uses that app's
+     * banner with the port's name on a pill (the DStv decoder, which reports nothing over CEC).
      */
-    private Entry consoleEntry() {
-        String port = ctx.getString(R.string.console_input).trim();
-        if (port.isEmpty()) return null;
+    private List<Entry> inputEntries() {
+        List<Entry> out = new ArrayList<>();
         android.media.tv.TvInputManager tim = ctx.getSystemService(android.media.tv.TvInputManager.class);
-        if (tim == null) return null;
-        boolean portFound = false;
-        String name = null;
-        boolean on = false;
-        for (android.media.tv.TvInputInfo info : tim.getTvInputList()) {
-            if (info.getId().equals(port)) portFound = true;
-            if (port.equals(info.getParentId())) {
-                CharSequence l = info.loadLabel(ctx);
-                if (l != null && l.length() > 0) name = l.toString();
-                on |= tim.getInputState(info.getId()) == android.media.tv.TvInputManager.INPUT_STATE_CONNECTED;
+        if (tim == null) return out;
+        List<android.media.tv.TvInputInfo> inputs = tim.getTvInputList();
+        for (String spec : ctx.getResources().getStringArray(R.array.input_tiles)) {
+            String[] f = spec.split("\\|");
+            if (f.length < 3) continue;
+            String key = f[0].trim(), port = f[1].trim(), style = f[2].trim();
+            String portName = null, device = null;
+            boolean on = false;
+            for (android.media.tv.TvInputInfo info : inputs) {
+                if (info.getId().equals(port)) {
+                    CharSequence l = info.loadLabel(ctx);
+                    portName = l != null ? l.toString() : "HDMI";
+                }
+                if (port.equals(info.getParentId())) {
+                    CharSequence l = info.loadLabel(ctx);
+                    if (l != null && l.length() > 0) device = l.toString();
+                    on |= tim.getInputState(info.getId()) == android.media.tv.TvInputManager.INPUT_STATE_CONNECTED;
+                }
             }
+            if (portName == null) continue;   // that port is gone
+            Drawable art;
+            String name;
+            if (style.startsWith("app:")) {
+                String pkg = style.substring(4);
+                art = InputArt.fromApp(ctx, pkg, portName);
+                name = InputArt.appLabel(ctx, pkg, device != null ? device : portName);
+            } else {
+                art = ConsoleArt.get(ctx, ctx.getString(R.string.console_short), on);
+                name = device != null ? device : ctx.getString(R.string.console_name);
+            }
+            if (art == null) continue;
+            Entry e = new Entry(Entry.CONSOLE, name, new ComponentName(key, "input"), art, null, null, 0);
+            e.inputId = port;
+            out.add(e);
         }
-        if (!portFound) return null;
-        if (name == null) name = ctx.getString(R.string.console_name);
-        Entry e = new Entry(Entry.CONSOLE, name, new ComponentName(CONSOLE_KEY, "input"),
-                ConsoleArt.get(ctx, ctx.getString(R.string.console_short), on), null, null, 0);
-        e.inputId = port;
-        return e;
+        return out;
     }
 
-    /** The console woke or slept: redraw just its tile. */
-    void refreshConsole() {
-        Entry fresh = consoleEntry();
+    /** An input's device woke, slept, appeared or went: redraw only the input tiles that changed. */
+    void refreshInputs() {
+        List<Entry> fresh = inputEntries();
         for (int i = 0; i < items.size(); i++) {
             Entry e = items.get(i);
-            if (e.kind != Entry.CONSOLE || fresh == null) continue;
-            if (e.banner != fresh.banner) {
-                e.banner = fresh.banner;
-                notifyItemChanged(i);
+            if (e.kind != Entry.CONSOLE) continue;
+            for (Entry f : fresh) {
+                if (f.pkg.equals(e.pkg) && f.banner != e.banner) {
+                    e.banner = f.banner;
+                    notifyItemChanged(i);
+                }
             }
         }
     }

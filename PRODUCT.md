@@ -62,6 +62,9 @@ use.
   the data panel adds a 7-day bar chart with the week's top app shaded (WeekBars, drawn in onDraw).
 - The Wi-Fi pill's badge is the cap light: green "Cap" while the limiter runs with the cap on, red
   "Cap off" otherwise (a real VPN app's badge still takes precedence).
+- HDMI input tiles (config input_tiles, "key|input|style"): the DStv decoder on HDMI 3 takes the DStv app's
+  top-row slot ("decoder" in dock_apps; InputArt draws the installed DStv app's banner with an "HDMI 3" pill;
+  the decoder reports nothing over CEC, so no status); the app moved to the grid.
 - Console tile (Entry.CONSOLE, ConsoleArt): sixth top-row slot ("console" in dock_apps), PlayStation-blue
   "PS5" face with an On/Standby pill from the CEC device on config console_input (HDMI 2, HW16). OK switches
   to HDMI 2, which also wakes the PS5 over CEC. Redraws only on TvInputCallback changes.
