@@ -216,6 +216,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         wxNote = findViewById(R.id.wxNote);
         flagLine = findViewById(R.id.flagLine);
         dataLine = findViewById(R.id.dataLine);
+        dataValue = findViewById(R.id.dataValue);
         if (!getString(R.string.weather_place).trim().isEmpty()) {
             weather = new Weather(this, getString(R.string.weather_latitude).trim(),
                     getString(R.string.weather_longitude).trim(), getString(R.string.weather_unit).trim());
@@ -410,8 +411,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             return;
         }
         String note = weatherNote(this, now);
-        wxNote.setText(note);
-        wxNote.setVisibility(note.isEmpty() ? View.GONE : View.VISIBLE);
+        // The widget's third line: the note when there is one (rain, heat), else the place.
+        wxNote.setText(note.isEmpty() ? getString(R.string.weather_place) : note);
+        wxNote.setVisibility(View.VISIBLE);
         wxIcon.setImageResource(Weather.icon(now.code, now.day));
         wxTemp.setText(now.temp + "\u00B0");
         wxText.setText(getString(Weather.label(now.code)) + "   " + getString(R.string.wx_high_low, now.high, now.low));
@@ -692,7 +694,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private TextView limiterTitle;
     private WeekBars weekBars;
-    private TextView dataLine;
+    private View dataLine;
+    private TextView dataValue;
     private long dataLineAt;
 
     /** "5.3 GB used this month" under the weather: one device query, in the background, every 10 minutes at most. */
@@ -707,7 +710,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                     dataLine.setVisibility(View.GONE);
                     return;
                 }
-                dataLine.setText(getString(R.string.data_month_line, DataUsage.format(m)));
+                dataValue.setText(DataUsage.format(m));
                 dataLine.setVisibility(View.VISIBLE);
             });
         }, "data-line").start();
@@ -913,6 +916,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // A CEC device that is on (a console, a soundbar) is listed as a child of its HDMI port, under the
             // name it announces ("PlayStation 5"): name the port's row after it instead of a second row.
             java.util.Map<String, String> deviceOnPort = new java.util.HashMap<>();
+            java.util.Map<String, String> portNames = AppAdapter.inputNames(this);
             for (TvInputInfo info : inputs) {
                 if (info.getParentId() == null) continue;
                 CharSequence n = info.loadLabel(this);
@@ -939,7 +943,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 int state = hdmi && hdmiStateBogus ? -1 : tim.getInputState(id);
                 if (!hdmi && rows.getChildCount() > 0 && !sawNonHdmi) addSeparator(rows);
                 if (!hdmi) sawNonHdmi = true;
-                String device = deviceOnPort.get(id);
+                // A name given in input_tiles ("DStv") wins; then the CEC device's own; then the port's.
+                String given = portNames.get(id);
+                String device = given != null ? given : deviceOnPort.get(id);
                 View row = addInputRow(rows, popup, hdmi ? R.drawable.ic_input : R.drawable.ic_av,
                         device != null ? device : label, state, () -> openInput(id));
                 if (device != null) {

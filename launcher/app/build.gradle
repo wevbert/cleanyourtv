@@ -18,6 +18,18 @@ if (!sfPro.exists()) {
     java.nio.file.Files.copy(installed.toPath(), sfPro.toPath())
     logger.lifecycle("Copied SF Pro from ${installed}")
 }
+// SF Pro Rounded Semibold, for the home screen's widget numerals; same rule as SF Pro.
+def sfRounded = file('src/main/res/font/sf_pro_rounded_semibold.otf')
+if (!sfRounded.exists()) {
+    def installed = ['/Library/Fonts/SF-Pro-Rounded-Semibold.otf', "${System.getProperty('user.home')}/Library/Fonts/SF-Pro-Rounded-Semibold.otf"]
+            .collect { new File(it) }.find { it.exists() }
+    if (installed == null) {
+        throw new GradleException("SF Pro Rounded is missing: ${sfRounded}\n" +
+                "Install SF Pro from https://developer.apple.com/fonts/ (it includes SF-Pro-Rounded-Semibold.otf), then build again.")
+    }
+    java.nio.file.Files.copy(installed.toPath(), sfRounded.toPath())
+    logger.lifecycle("Copied SF Pro Rounded from ${installed}")
+}
 
 android {
     namespace 'com.gathin.tvhome'
@@ -64,7 +76,7 @@ android {
     // Fonts stored uncompressed: Android then maps SF Pro (21 MB) straight from the APK instead of
     // unpacking it into native memory, and Fonts can open it by file descriptor.
     androidResources {
-        noCompress 'ttf'
+        noCompress 'ttf', 'otf'
     }
 
     compileOptions {

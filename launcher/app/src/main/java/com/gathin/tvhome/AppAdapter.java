@@ -213,6 +213,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             String[] f = spec.split("\\|");
             if (f.length < 3) continue;
             String key = f[0].trim(), port = f[1].trim(), style = f[2].trim();
+            String given = f.length > 3 ? f[3].trim() : "";
             String portName = null, device = null;
             boolean on = false;
             for (android.media.tv.TvInputInfo info : inputs) {
@@ -229,13 +230,16 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             if (portName == null) continue;   // that port is gone
             Drawable art;
             String name;
-            if (style.startsWith("app:")) {
+            if (style.startsWith("logo:")) {
+                art = InputArt.fromLogo(ctx, style.substring(5));
+                name = !given.isEmpty() ? given : device != null ? device : portName;
+            } else if (style.startsWith("app:")) {
                 String pkg = style.substring(4);
                 art = InputArt.fromApp(ctx, pkg, portName);
-                name = InputArt.appLabel(ctx, pkg, device != null ? device : portName);
+                name = !given.isEmpty() ? given : InputArt.appLabel(ctx, pkg, device != null ? device : portName);
             } else {
                 art = ConsoleArt.get(ctx, ctx.getString(R.string.console_short), on);
-                name = device != null ? device : ctx.getString(R.string.console_name);
+                name = !given.isEmpty() ? given : device != null ? device : ctx.getString(R.string.console_name);
             }
             if (art == null) continue;
             Entry e = new Entry(Entry.CONSOLE, name, new ComponentName(key, "input"), art, null, null, 0);
@@ -243,6 +247,16 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             out.add(e);
         }
         return out;
+    }
+
+    /** Names given to HDMI ports in input_tiles (4th field), for the Inputs menu: input id -> name. */
+    static Map<String, String> inputNames(Context ctx) {
+        Map<String, String> m = new HashMap<>();
+        for (String spec : ctx.getResources().getStringArray(R.array.input_tiles)) {
+            String[] f = spec.split("\\|");
+            if (f.length > 3 && !f[3].trim().isEmpty()) m.put(f[1].trim(), f[3].trim());
+        }
+        return m;
     }
 
     /** An input's device woke, slept, appeared or went: redraw only the input tiles that changed. */

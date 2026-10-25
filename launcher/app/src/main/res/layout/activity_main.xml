@@ -36,7 +36,8 @@
         android:scrollbars="none"
         android:descendantFocusability="afterDescendants" />
 
-    <!-- Top left, where tvOS sets a show's title: the greeting, and the weather under it. -->
+    <!-- Top left: the greeting, and under it a row of glass widgets (time and date, weather, data), as on
+         iPad and StandBy. Numerals in SF Pro Rounded, labels in SF Pro Text. -->
     <LinearLayout
         android:id="@+id/welcomeBlock"
         android:layout_width="wrap_content"
@@ -78,85 +79,149 @@
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/weatherRow"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:visibility="gone">
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal">
 
-            <ImageView
-                android:id="@+id/wxIcon"
-                android:layout_width="22dp"
-                android:layout_height="22dp"
-                android:importantForAccessibility="no" />
+            <!-- Time and date. -->
+            <LinearLayout
+                android:layout_width="214dp"
+                android:layout_height="108dp"
+                android:background="@drawable/widget_glass"
+                android:orientation="vertical"
+                android:gravity="center_vertical"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp">
 
-            <TextView
-                android:id="@+id/wxTemp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:textColor="#FFFFFFFF"
-                android:textSize="17sp"
-                android:letterSpacing="0.0115"
-                android:fontFamily="@font/sf_pro"
-                android:fontVariationSettings="'wght' 600, 'opsz' 28"
-                android:fontFeatureSettings="tnum"
-                android:shadowColor="#73000000"
-                android:shadowDy="1"
-                android:shadowRadius="10" />
+                <TextClock
+                    android:id="@+id/clock"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:format12Hour="h:mm"
+                    android:format24Hour="HH:mm"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="44sp"
+                    android:letterSpacing="-0.01"
+                    android:fontFamily="@font/sf_pro_rounded_semibold"
+                    android:includeFontPadding="false" />
 
-            <TextView
-                android:id="@+id/wxText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:singleLine="true"
-                android:textColor="#E0FFFFFF"
-                android:textSize="15sp"
-                android:letterSpacing="0.0132"
-                android:fontFamily="@font/sf_pro"
-                android:fontVariationSettings="'wght' 500, 'opsz' 28"
-                android:shadowColor="#73000000"
-                android:shadowDy="1"
-                android:shadowRadius="10" />
+                <TextClock
+                    android:id="@+id/dateLine"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:format12Hour="EEEE, d MMMM"
+                    android:format24Hour="EEEE, d MMMM"
+                    android:singleLine="true"
+                    android:textColor="#C7FFFFFF"
+                    android:textSize="14sp"
+                    android:letterSpacing="0.0137"
+                    android:fontFamily="@font/sf_pro"
+                    android:fontVariationSettings="'wght' 500, 'opsz' 28" />
+            </LinearLayout>
+
+            <!-- Weather: icon and temperature, condition and range, then the note (rain, heat) or the place. -->
+            <LinearLayout
+                android:id="@+id/weatherRow"
+                android:layout_width="230dp"
+                android:layout_height="108dp"
+                android:layout_marginStart="12dp"
+                android:background="@drawable/widget_glass"
+                android:orientation="vertical"
+                android:gravity="center_vertical"
+                android:paddingStart="18dp"
+                android:paddingEnd="16dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:id="@+id/wxIcon"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
+                        android:importantForAccessibility="no" />
+
+                    <TextView
+                        android:id="@+id/wxTemp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:textColor="#FFFFFFFF"
+                        android:textSize="36sp"
+                        android:fontFamily="@font/sf_pro_rounded_semibold"
+                        android:fontFeatureSettings="tnum"
+                        android:includeFontPadding="false" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/wxText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:singleLine="true"
+                    android:ellipsize="end"
+                    android:textColor="#F2FFFFFF"
+                    android:textSize="14sp"
+                    android:letterSpacing="0.0137"
+                    android:fontFamily="@font/sf_pro"
+                    android:fontVariationSettings="'wght' 500, 'opsz' 28" />
+
+                <TextView
+                    android:id="@+id/wxNote"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:singleLine="true"
+                    android:ellipsize="end"
+                    android:textColor="#A6FFFFFF"
+                    android:textSize="12sp"
+                    android:letterSpacing="0.0057"
+                    android:fontFamily="@font/sf_pro"
+                    android:fontVariationSettings="'wght' 500, 'opsz' 24" />
+            </LinearLayout>
+
+            <!-- Wi-Fi data used this month, read in the background when Home opens. -->
+            <LinearLayout
+                android:id="@+id/dataLine"
+                android:layout_width="150dp"
+                android:layout_height="108dp"
+                android:layout_marginStart="12dp"
+                android:background="@drawable/widget_glass"
+                android:orientation="vertical"
+                android:gravity="center_vertical"
+                android:paddingStart="18dp"
+                android:paddingEnd="14dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/dataValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:singleLine="true"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="32sp"
+                    android:fontFamily="@font/sf_pro_rounded_semibold"
+                    android:fontFeatureSettings="tnum"
+                    android:includeFontPadding="false" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/data_this_month"
+                    android:singleLine="true"
+                    android:textColor="#C7FFFFFF"
+                    android:textSize="14sp"
+                    android:letterSpacing="0.0137"
+                    android:fontFamily="@font/sf_pro"
+                    android:fontVariationSettings="'wght' 500, 'opsz' 28" />
+            </LinearLayout>
         </LinearLayout>
-
-        <!-- Rain coming, or a hot day; empty otherwise. -->
-        <TextView
-            android:id="@+id/wxNote"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:singleLine="true"
-            android:textColor="#C7FFFFFF"
-            android:textSize="14sp"
-            android:letterSpacing="0.0137"
-            android:fontFamily="@font/sf_pro"
-            android:fontVariationSettings="'wght' 500, 'opsz' 28"
-            android:shadowColor="#73000000"
-            android:shadowDy="1"
-            android:shadowRadius="10"
-            android:visibility="gone" />
-
-        <!-- Wi-Fi data used this month, read in the background when Home opens. -->
-        <TextView
-            android:id="@+id/dataLine"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:singleLine="true"
-            android:textColor="#B3FFFFFF"
-            android:textSize="14sp"
-            android:letterSpacing="0.0137"
-            android:fontFamily="@font/sf_pro"
-            android:fontVariationSettings="'wght' 500, 'opsz' 28"
-            android:fontFeatureSettings="tnum"
-            android:shadowColor="#73000000"
-            android:shadowDy="1"
-            android:shadowRadius="10"
-            android:visibility="gone" />
     </LinearLayout>
 
     <LinearLayout
@@ -168,25 +233,11 @@
         android:layout_marginEnd="44dp"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingStart="16dp"
+        android:paddingStart="5dp"
         android:paddingEnd="5dp"
         android:background="@drawable/glass_capsule"
         android:animateLayoutChanges="true">
 
-        <TextClock
-            android:id="@+id/clock"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:format12Hour="h:mm"
-            android:format24Hour="HH:mm"
-            android:textColor="#F2FFFFFF"
-            android:textSize="13sp"
-            android:letterSpacing="0.0083"
-            android:fontFamily="@font/sf_pro"
-            android:fontVariationSettings="'wght' 590, 'opsz' 26"
-            android:fontFeatureSettings="tnum"
-            android:includeFontPadding="false" />
 
         <TextView
             android:id="@+id/btnInputs"

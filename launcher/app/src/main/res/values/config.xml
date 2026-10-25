@@ -81,11 +81,12 @@
     <string name="weather_longitude" translatable="false">-0.1870</string>
     <string name="weather_unit" translatable="false">celsius</string>
 
-    <!-- HDMI input tiles: "key|TvInputInfo id|style", placed by key in dock_apps. Style "playstation" draws the
+    <!-- HDMI input tiles: "key|TvInputInfo id|style|name", placed by key in dock_apps. The optional name also
+         labels that port in the Inputs menu. Style "playstation" draws the
          PlayStation face with On/Standby from the CEC device on that port; "app:<package>" uses that app's
-         banner with the port's name (HW15/16/17 are HDMI 1/2/3 here). -->
+         banner with the port's name; "logo:<drawable>" a brand logo on navy (HW15/16/17 are HDMI 1/2/3 here). -->
     <string-array name="input_tiles" translatable="false">
         <item>console|com.tcl.tvinput/.TvPassThroughService/HW16|playstation</item>
-        <item>decoder|com.tcl.tvinput/.TvPassThroughService/HW17|app:com.dstvmobile.android</item>
+        <item>decoder|com.tcl.tvinput/.TvPassThroughService/HW17|logo:dstv_logo|DStv</item>
     </string-array>
 </resources>

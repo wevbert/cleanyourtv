@@ -98,4 +98,5 @@
     <string name="console_short">PS5</string>
     <string name="console_on">On</string>
     <string name="console_standby">Standby</string>
+    <string name="data_this_month">used this month</string>
 </resources>

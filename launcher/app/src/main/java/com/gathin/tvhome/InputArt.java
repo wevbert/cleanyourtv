@@ -64,6 +64,32 @@ final class InputArt {
         return out;
     }
 
+    /**
+     * A brand logo (a vector drawable by name, e.g. dstv_logo) centred on a deep navy tile, nothing else: the
+     * tile reads as the service itself, as the app tiles beside it do.
+     */
+    static synchronized Drawable fromLogo(Context ctx, String drawableName) {
+        String key = "logo|" + drawableName;
+        Drawable cached = CACHE.get(key);
+        if (cached != null) return cached;
+        int id = ctx.getResources().getIdentifier(drawableName, "drawable", ctx.getPackageName());
+        Drawable logo = id != 0 ? ctx.getDrawable(id) : null;
+        if (logo == null) return null;
+        Bitmap b = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(b);
+        Paint bg = new Paint();
+        bg.setShader(new android.graphics.LinearGradient(0, 0, W, H, 0xFF0E3A63, 0xFF071F38,
+                android.graphics.Shader.TileMode.CLAMP));
+        c.drawRect(0, 0, W, H, bg);
+        float lw = logo.getIntrinsicWidth(), lh = logo.getIntrinsicHeight();
+        int w = Math.round(W * 0.56f), h = Math.round(w * lh / lw);
+        logo.setBounds((W - w) / 2, (H - h) / 2, (W + w) / 2, (H + h) / 2);
+        logo.draw(c);
+        Drawable out = new BitmapDrawable(ctx.getResources(), b);
+        CACHE.put(key, out);
+        return out;
+    }
+
     /** "DStv · HDMI 3": the app's name with the port, for the label and screen readers. */
     static String appLabel(Context ctx, String pkg, String fallback) {
         try {
