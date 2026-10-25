@@ -79,7 +79,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private FrameLayout root;
     private View gridShade;
     private Weather weather;
-    private TextView welcome;
+    private TextView welcome, greetLead;
+    private ImageView greetIcon;
     private String ownerName;
     private View weatherRow;
     private ImageView wxIcon;
@@ -208,6 +209,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         String owner = getString(R.string.owner_name).trim();
         ownerName = owner;
         welcome = findViewById(R.id.welcome);
+        greetLead = findViewById(R.id.greetLead);
+        greetIcon = findViewById(R.id.greetIcon);
         if (owner.isEmpty()) welcome.setVisibility(View.GONE);
         weatherRow = findViewById(R.id.weatherRow);
         wxIcon = findViewById(R.id.wxIcon);
@@ -399,9 +402,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private void updateGreeting() {
         if (ownerName.isEmpty()) return;
         Greeting g = Greeting.now(this, ownerName);
-        welcome.setText(g.text);
+        // The small line is the greeting without the name ("Good evening", "Happy birthday"); the name stands alone.
+        String lead = g.text.endsWith(", " + ownerName) ? g.text.substring(0, g.text.length() - ownerName.length() - 2) : g.text;
+        greetLead.setText(lead);
+        welcome.setText(lead.equals(g.text) ? "" : ownerName);
+        int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+        // The icon follows the greeting: sun by day, a setting sun in the early evening, the moon after dark.
+        greetIcon.setImageResource(hour >= 5 && hour < 17 ? R.drawable.wx_clear_day
+                : hour >= 17 && hour < 19 ? R.drawable.greet_sunset : R.drawable.wx_clear_night);
         flagLine.setVisibility(g.national ? View.VISIBLE : View.GONE);
     }
+
 
     /** The weather line under the greeting: icon, temperature, conditions and today's range. */
     private void showWeather(Weather.Now now) {

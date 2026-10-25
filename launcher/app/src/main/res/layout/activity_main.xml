@@ -47,20 +47,52 @@
         android:layout_marginTop="28dp"
         android:orientation="vertical">
 
-        <!-- SF Pro Display semibold at 60pt, Apple's tracking for that size. -->
+        <!-- Greeting in two tiers: a small line (time-of-day icon and "Good evening" / "Happy Sunday"), then the
+             name large in SF Pro Display Bold. -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:id="@+id/greetIcon"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_marginEnd="8dp"
+                android:importantForAccessibility="no" />
+
+            <TextView
+                android:id="@+id/greetLead"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:singleLine="true"
+                android:textColor="#E0FFFFFF"
+                android:textSize="18sp"
+                android:letterSpacing="0.0105"
+                android:fontFamily="@font/sf_pro"
+                android:fontVariationSettings="'wght' 500, 'opsz' 28"
+                android:shadowColor="#66000000"
+                android:shadowDy="1"
+                android:shadowRadius="10"
+                android:includeFontPadding="false" />
+        </LinearLayout>
+
+        <!-- SF Pro Display Bold at 84pt, Apple's tracking for that size. -->
         <TextView
             android:id="@+id/welcome"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
             android:singleLine="true"
             android:textColor="#FFFFFFFF"
-            android:textSize="30sp"
-            android:letterSpacing="0.0044"
+            android:textSize="42sp"
+            android:letterSpacing="-0.0137"
             android:fontFamily="@font/sf_pro"
-            android:fontVariationSettings="'wght' 600, 'opsz' 28"
+            android:fontVariationSettings="'wght' 700, 'opsz' 28"
             android:shadowColor="#73000000"
             android:shadowDy="2"
-            android:shadowRadius="14"
+            android:shadowRadius="16"
             android:includeFontPadding="false" />
 
         <!-- Ghana's red, gold and green, on national days only. -->
