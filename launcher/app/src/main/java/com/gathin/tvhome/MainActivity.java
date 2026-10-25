@@ -79,7 +79,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private FrameLayout root;
     private View gridShade;
     private Weather weather;
-    private TextView welcome, greetLead;
+    private TextView welcome;
     private ImageView greetIcon;
     private String ownerName;
     private View weatherRow;
@@ -209,7 +209,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         String owner = getString(R.string.owner_name).trim();
         ownerName = owner;
         welcome = findViewById(R.id.welcome);
-        greetLead = findViewById(R.id.greetLead);
         greetIcon = findViewById(R.id.greetIcon);
         if (owner.isEmpty()) welcome.setVisibility(View.GONE);
         weatherRow = findViewById(R.id.weatherRow);
@@ -402,16 +401,32 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private void updateGreeting() {
         if (ownerName.isEmpty()) return;
         Greeting g = Greeting.now(this, ownerName);
-        // The small line is the greeting without the name ("Good evening", "Happy birthday"); the name stands alone.
-        String lead = g.text.endsWith(", " + ownerName) ? g.text.substring(0, g.text.length() - ownerName.length() - 2) : g.text;
-        greetLead.setText(lead);
-        welcome.setText(lead.equals(g.text) ? "" : ownerName);
         int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+        // "Good evening, " in medium, then the name in semibold with a tint that follows the day.
+        boolean birthday = g.text.equals(getString(R.string.occasion_birthday, ownerName));
+        int tint = birthday ? 0xFFFFB8D6
+                : hour >= 5 && hour < 12 ? 0xFFFFD98A     // morning gold
+                : hour >= 12 && hour < 17 ? 0xFFFFEAC2    // afternoon cream
+                : hour >= 17 && hour < 19 ? 0xFFFFC78F    // sunset peach
+                : 0xFFC9C6FF;                             // night lavender
+        int at = g.text.lastIndexOf(ownerName);
+        android.text.SpannableStringBuilder sb = new android.text.SpannableStringBuilder(g.text);
+        int end = sb.length();
+        sb.setSpan(new android.text.style.TypefaceSpan(Fonts.sf(this, "'wght' 500, 'opsz' 28")), 0, end,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        if (at >= 0) {
+            sb.setSpan(new android.text.style.TypefaceSpan(Fonts.sf(this, "'wght' 640, 'opsz' 28")), at, at + ownerName.length(),
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            sb.setSpan(new android.text.style.ForegroundColorSpan(tint), at, at + ownerName.length(),
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        welcome.setText(sb);
         // The icon follows the greeting: sun by day, a setting sun in the early evening, the moon after dark.
         greetIcon.setImageResource(hour >= 5 && hour < 17 ? R.drawable.wx_clear_day
                 : hour >= 17 && hour < 19 ? R.drawable.greet_sunset : R.drawable.wx_clear_night);
         flagLine.setVisibility(g.national ? View.VISIBLE : View.GONE);
     }
+
 
 
     /** The weather line under the greeting: icon, temperature, conditions and today's range. */

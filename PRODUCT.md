@@ -37,8 +37,9 @@ use.
   through Inputs, not as a tile. Utility apps that must keep running (Quick panel) are hidden but
   never disabled.
 - Packages that have been turned off are listed in backup/my-debloat.txt (local, not committed).
-- Greeting in two tiers: a small line with a time-of-day icon (sun, setting sun 17-19, moon) and the greeting
-  or occasion ("Good evening", "Happy birthday"), then the name in SF Pro Display Bold 42sp.
+- Greeting on one line (design B, chosen 25 Oct 2026 over a two-tier layout): time-of-day icon (sun, setting
+  sun 17-19, moon), "Good evening," in SF Pro medium 26sp, the name in semibold tinted by the day (morning gold,
+  afternoon cream, sunset peach, night lavender, pink on the birthday).
 - Home widgets under the greeting (glass cards, widget_glass): time and date (SF Pro Rounded Semibold numerals,
   git-ignored and auto-copied like SF Pro), weather (temperature, condition and range, then the note or "Accra"),
   and data used this month. The capsule keeps only Inputs, Wi-Fi and Settings.
